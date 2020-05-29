@@ -14,6 +14,7 @@ type QueryBuilder struct {
 	SectionFrom   string
 	SectionLimit  string
 	SectionOffset string
+	SectionJoin   string
 }
 
 func (queryBuilder *QueryBuilder) putIntermediateString(baseSql *string,
