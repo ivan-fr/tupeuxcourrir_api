@@ -26,7 +26,7 @@ type User struct {
 }
 
 func NewUser() User {
-	usersRoles := NewUsersRoles()
+	usersRoles := NewUsersRole()
 	thread := NewThread()
 
 	user := User{}

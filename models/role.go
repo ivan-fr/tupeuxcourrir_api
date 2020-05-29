@@ -7,7 +7,7 @@ type Role struct {
 }
 
 func NewRole() Role {
-	usersRoles := NewUsersRoles()
+	usersRoles := NewUsersRole()
 	role := Role{}
 	role.Users = &ManyToManyRelationShip{Target: &Thread{}, IntermediateTarget: &usersRoles}
 
