@@ -63,8 +63,14 @@ func (queryBuilder *QueryBuilder) constructSql() string {
 	queryBuilder.addPrefixToSections(" ")
 	queryBuilder.SectionSelect = "SELECT *"
 
-	return fmt.Sprintf("%v%v%v%v%v%v;", queryBuilder.SectionSelect,
+	var joins string
+	for _, join := range queryBuilder.SectionJoin {
+		joins = fmt.Sprintf("%v %v", joins, join)
+	}
+
+	return fmt.Sprintf("%v%v%v%v%v%v%v;", queryBuilder.SectionSelect,
 		queryBuilder.SectionFrom,
+		joins,
 		queryBuilder.SectionWhere,
 		queryBuilder.SectionOrder,
 		queryBuilder.SectionLimit,
