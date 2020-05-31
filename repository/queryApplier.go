@@ -54,6 +54,10 @@ func (queryApplier *QueryApplier) getPKFieldSelfCOLUMNTagFromModel() string {
 }
 
 func (queryApplier *QueryApplier) getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
+	if queryApplier.model != model {
+		panic("must pass the same model from queryApplier")
+	}
+
 	reflectModel := reflect.ValueOf(model)
 	if reflectModel.Kind() != reflect.Ptr {
 		return make([]interface{}, 0, 0),
@@ -62,9 +66,17 @@ func (queryApplier *QueryApplier) getAddrFieldsToScan(model interface{}) ([]inte
 
 	reflectModel = reflectModel.Elem()
 	fieldsTab := make([]interface{}, reflectModel.NumField())
+	var field reflect.Value
 
 	for i := 0; i < reflectModel.NumField(); i++ {
-		fieldsTab[i] = reflectModel.Field(i).Addr()
+		field = reflectModel.Field(i)
+		_, ok := field.Interface().(*models.ManyToOneRelationShip)
+		_, ok1 := field.Interface().(*models.OneToManyRelationShip)
+		_, ok2 := field.Interface().(*models.ManyToOneRelationShip)
+
+		if !ok && !ok1 && !ok2 {
+			fieldsTab = append(fieldsTab, field.Addr())
+		}
 	}
 
 	return fieldsTab, nil
