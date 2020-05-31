@@ -5,7 +5,7 @@ import (
 )
 
 type User struct {
-	IdUser                   int `orm:"AI;SelfCOLUMN:idUser"`
+	IdUser                   int `orm:"PK;SelfCOLUMN:idUser"`
 	Email                    string
 	EncryptedPassword        string
 	Salt                     string

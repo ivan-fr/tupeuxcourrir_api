@@ -3,7 +3,9 @@ package repository
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"tupeuxcourrir_api/db"
+	"tupeuxcourrir_api/models"
 )
 
 type QueryBuilder struct {
@@ -14,7 +16,7 @@ type QueryBuilder struct {
 	SectionFrom   string
 	SectionLimit  string
 	SectionOffset string
-	SectionJoin   string
+	SectionJoin   []string
 }
 
 func (queryBuilder *QueryBuilder) putIntermediateString(baseSql *string,
@@ -56,14 +58,10 @@ func (queryBuilder *QueryBuilder) addPrefixToSections(prefix string) {
 }
 
 func (queryBuilder *QueryBuilder) constructSql() string {
-	modelName := reflect.TypeOf(queryBuilder.model).Name()
-	queryBuilder.SectionFrom = fmt.Sprintf("FROM %vs", modelName)
-
-	if queryBuilder.SectionSelect == "" {
-		queryBuilder.SectionSelect = "SELECT *"
-	}
+	queryBuilder.SectionFrom = fmt.Sprintf("FROM %v", queryBuilder.getTableName(queryBuilder.getModelName()))
 
 	queryBuilder.addPrefixToSections(" ")
+	queryBuilder.SectionSelect = "SELECT *"
 
 	return fmt.Sprintf("%v%v%v%v%v%v;", queryBuilder.SectionSelect,
 		queryBuilder.SectionFrom,
@@ -71,6 +69,22 @@ func (queryBuilder *QueryBuilder) constructSql() string {
 		queryBuilder.SectionOrder,
 		queryBuilder.SectionLimit,
 		queryBuilder.SectionOffset)
+}
+
+func (queryBuilder *QueryBuilder) getTableName(name string) string {
+	return strings.ToLower(fmt.Sprintf("%vs", name))
+}
+
+func (queryBuilder *QueryBuilder) addMTO(fieldInterface interface{}) {
+	relationship := fieldInterface.(*models.ManyToOneRelationShip)
+	targetName := reflect.TypeOf(relationship.Target).Elem().Name()
+	stringJoin := fmt.Sprintf("INNER JOIN %v ON %v.%v = %v.%v",
+		queryBuilder.getTableName(targetName),
+		queryBuilder.getTableName(queryBuilder.getModelName()),
+		relationship.AssociateColumn,
+		queryBuilder.getTableName(targetName),
+		queryBuilder.getPKFieldSelfCOLUMNTagFromModel())
+	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
 }
 
 func (queryBuilder *QueryBuilder) OrderBy(orderFilter map[string]string) *QueryBuilder {
@@ -107,6 +121,18 @@ func (queryBuilder *QueryBuilder) Clear() {
 	queryBuilder.SectionWhere = ""
 	queryBuilder.SectionFrom = ""
 	queryBuilder.SectionSelect = ""
+}
+
+func (queryBuilder *QueryBuilder) Consider(fieldName string) {
+	reflectQueryBuilder := reflect.ValueOf(queryBuilder.model).Elem()
+	fieldInterface := reflectQueryBuilder.FieldByName(fieldName).Interface()
+
+	if queryBuilder.addRelationship(fieldInterface) {
+		switch fieldInterface.(type) {
+		case *models.ManyToOneRelationShip:
+			queryBuilder.addMTO(fieldInterface)
+		}
+	}
 }
 
 func (queryBuilder *QueryBuilder) ApplyQuery() ([]interface{}, error) {

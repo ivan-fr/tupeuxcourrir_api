@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Thread struct {
-	IdThread              int `orm:"AI;SelfCOLUMN:idThread"`
+	IdThread              int `orm:"PK;SelfCOLUMN:idThread"`
 	CreatedAt             time.Time
 	ActiveOnThread        int
 	Reciprocal            bool

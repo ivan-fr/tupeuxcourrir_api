@@ -1,7 +1,7 @@
 package models
 
 type Role struct {
-	IdRoles int `orm:"AI;SelfCOLUMN:idRoles"`
+	IdRoles int `orm:"PK;SelfCOLUMN:idRoles"`
 	Role    string
 	Users   *ManyToManyRelationShip
 }

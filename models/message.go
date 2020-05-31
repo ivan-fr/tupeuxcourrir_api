@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Message struct {
-	IdMessage int
+	IdMessage int `orm:"PK;SelfCOLUMN:idMessage"`
 	Message   string
 	CreatedAt time.Time
 	UpdatedAt time.Time

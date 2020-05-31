@@ -3,11 +3,54 @@ package repository
 import (
 	"errors"
 	"reflect"
+	"strings"
+	"tupeuxcourrir_api/models"
 )
 
 type QueryApplier struct {
 	model             interface{}
-	relationShipOrder []interface{}
+	relationshipOrder []interface{}
+}
+
+func (queryApplier *QueryApplier) getModelName() string {
+	modelName := reflect.TypeOf(queryApplier.model).Elem().Name()
+	return modelName
+}
+
+func (queryApplier *QueryApplier) getPKFieldSelfCOLUMNTagFromModel() string {
+	reflectModel := reflect.TypeOf(queryApplier.model)
+	var field reflect.StructField
+
+	var ormTags []string
+	var isPk bool
+
+	for i := 0; i < reflectModel.NumField(); i++ {
+		field = reflectModel.Field(i)
+		if v, ok := field.Tag.Lookup("orm"); ok {
+			ormTags = strings.Split(v, ";")
+
+			for _, vOfData := range ormTags {
+				if vOfData == "PK" {
+					isPk = true
+					break
+				}
+			}
+
+			if isPk {
+				break
+			}
+		}
+	}
+
+	if isPk {
+		for _, vOfData := range ormTags {
+			if strings.Contains(vOfData, "SelfCOLUMN") {
+				return strings.Split(vOfData, ":")[1]
+			}
+		}
+	}
+
+	panic("no self column in pk model tag")
 }
 
 func (queryApplier *QueryApplier) getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
@@ -25,10 +68,6 @@ func (queryApplier *QueryApplier) getAddrFieldsToScan(model interface{}) ([]inte
 	}
 
 	return fieldsTab, nil
-}
-
-func (queryApplier *QueryApplier) appendRelationShip(relationShip interface{}) {
-	queryApplier.relationShipOrder = append(queryApplier.relationShipOrder, relationShip)
 }
 
 func (queryApplier *QueryApplier) newModel() interface{} {
@@ -50,4 +89,16 @@ func (queryApplier *QueryApplier) hydrateOne(scan func(dest ...interface{}) erro
 	}
 
 	return newModel, err
+}
+
+func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool {
+	result := false
+
+	switch relationship.(type) {
+	case *models.ManyToManyRelationShip, *models.ManyToOneRelationShip, *models.OneToManyRelationShip:
+		result = true
+		queryApplier.relationshipOrder = append(queryApplier.relationshipOrder, relationship)
+	}
+
+	return result
 }
