@@ -3,7 +3,6 @@ package repository
 import (
 	"errors"
 	"reflect"
-	"strings"
 	"tupeuxcourrir_api/models"
 )
 
@@ -17,47 +16,7 @@ func (queryApplier *QueryApplier) getModelName() string {
 	return modelName
 }
 
-func (queryApplier *QueryApplier) getPKFieldSelfCOLUMNTagFromModel() string {
-	reflectModel := reflect.TypeOf(queryApplier.model)
-	var field reflect.StructField
-
-	var ormTags []string
-	var isPk bool
-
-	for i := 0; i < reflectModel.NumField(); i++ {
-		field = reflectModel.Field(i)
-		if v, ok := field.Tag.Lookup("orm"); ok {
-			ormTags = strings.Split(v, ";")
-
-			for _, vOfData := range ormTags {
-				if vOfData == "PK" {
-					isPk = true
-					break
-				}
-			}
-
-			if isPk {
-				break
-			}
-		}
-	}
-
-	if isPk {
-		for _, vOfData := range ormTags {
-			if strings.Contains(vOfData, "SelfCOLUMN") {
-				return strings.Split(vOfData, ":")[1]
-			}
-		}
-	}
-
-	panic("no self column in pk model tag")
-}
-
 func (queryApplier *QueryApplier) getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
-	if queryApplier.model != model {
-		panic("must pass the same model from queryApplier")
-	}
-
 	reflectModel := reflect.ValueOf(model)
 	if reflectModel.Kind() != reflect.Ptr {
 		return make([]interface{}, 0, 0),
@@ -89,12 +48,12 @@ func (queryApplier *QueryApplier) newModel() interface{} {
 	} else {
 		panic("the model passed to this queryBuilder must be a pointer")
 	}
-	return reflect.New(modelValue.Type()).Interface().(interface{})
+	return reflect.New(modelValue.Type()).Interface()
 }
 
 func (queryApplier *QueryApplier) hydrateOne(scan func(dest ...interface{}) error) (interface{}, error) {
 	var newModel = queryApplier.newModel()
-	addrFields, err := queryApplier.getAddrFieldsToScan(newModel)
+	addrFields, err := queryApplier.getAddrFieldsToScan(&newModel)
 
 	if err == nil {
 		err = scan(addrFields...)

@@ -83,13 +83,46 @@ func (queryBuilder *QueryBuilder) getTableName(name string) string {
 
 func (queryBuilder *QueryBuilder) addMTO(fieldInterface interface{}) {
 	relationship := fieldInterface.(*models.ManyToOneRelationShip)
-	targetName := reflect.TypeOf(relationship.Target).Elem().Name()
+	target := reflect.ValueOf(relationship.Target)
 	stringJoin := fmt.Sprintf("INNER JOIN %v ON %v.%v = %v.%v",
-		queryBuilder.getTableName(targetName),
+		queryBuilder.getTableName(target.Elem().Type().Name()),
 		queryBuilder.getTableName(queryBuilder.getModelName()),
 		relationship.AssociateColumn,
-		queryBuilder.getTableName(targetName),
-		queryBuilder.getPKFieldSelfCOLUMNTagFromModel())
+		queryBuilder.getTableName(target.Elem().Type().Name()),
+		getPKFieldSelfCOLUMNTagFromModel(target.Interface()))
+	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
+}
+
+func (queryBuilder *QueryBuilder) addOTM(fieldInterface interface{}) {
+	relationship := fieldInterface.(*models.OneToManyRelationShip)
+	target := reflect.ValueOf(relationship.Target).Elem()
+
+	var targetAssociatedColumn string
+
+	if relationship.FieldMTO != "" {
+		targetMTO := target.FieldByName(relationship.FieldMTO).Interface().(*models.ManyToOneRelationShip)
+		targetAssociatedColumn = targetMTO.AssociateColumn
+	} else {
+		var field reflect.Value
+		for i := 0; i < target.NumField(); i++ {
+			field = target.Field(i)
+			if field.Kind() == reflect.Ptr {
+				if v, ok := field.Interface().(*models.ManyToOneRelationShip); ok {
+					if reflect.TypeOf(v.Target).Elem() == target.Type() {
+						targetAssociatedColumn = v.AssociateColumn
+						break
+					}
+				}
+			}
+		}
+	}
+
+	stringJoin := fmt.Sprintf("LEFT JOIN %v ON %v.%v = %v.%v",
+		queryBuilder.getTableName(target.Type().Name()),
+		queryBuilder.getTableName(queryBuilder.getModelName()),
+		getPKFieldSelfCOLUMNTagFromModel(queryBuilder.model),
+		queryBuilder.getTableName(target.Type().Name()),
+		targetAssociatedColumn)
 	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
 }
 
@@ -137,6 +170,8 @@ func (queryBuilder *QueryBuilder) Consider(fieldName string) {
 		switch fieldInterface.(type) {
 		case *models.ManyToOneRelationShip:
 			queryBuilder.addMTO(fieldInterface)
+		case *models.OneToManyRelationShip:
+			queryBuilder.addOTM(fieldInterface)
 		}
 	}
 }
