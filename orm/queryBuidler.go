@@ -1,4 +1,4 @@
-package repository
+package orm
 
 import (
 	"fmt"
@@ -214,7 +214,6 @@ func (queryBuilder *QueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, error)
 	defer queryBuilder.Clear()
 
 	row := connection.Db.QueryRow(queryBuilder.constructSql())
-
 	newModel, err := queryBuilder.hydrate(row.Scan)
 
 	return newModel, err

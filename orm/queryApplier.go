@@ -1,4 +1,4 @@
-package repository
+package orm
 
 import (
 	"tupeuxcourrir_api/models"
