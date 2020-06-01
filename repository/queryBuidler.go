@@ -103,19 +103,7 @@ func (queryBuilder *QueryBuilder) addOTM(fieldInterface interface{}) {
 		targetMTO := target.FieldByName(relationship.FieldMTO).Interface().(*models.ManyToOneRelationShip)
 		targetAssociatedColumn = targetMTO.AssociateColumn
 	} else {
-		typeOfApplierQueryModel := reflect.TypeOf(queryBuilder.model).Elem()
-		var field reflect.Value
-		for i := 0; i < target.NumField(); i++ {
-			field = target.Field(i)
-			if field.Kind() == reflect.Ptr {
-				if v, ok := field.Interface().(*models.ManyToOneRelationShip); ok {
-					if reflect.TypeOf(v.Target).Elem() == typeOfApplierQueryModel {
-						targetAssociatedColumn = v.AssociateColumn
-						break
-					}
-				}
-			}
-		}
+		targetAssociatedColumn = getAssociatedColumnFromReverse(queryBuilder.model, target)
 	}
 
 	stringJoin := fmt.Sprintf("LEFT JOIN %v ON %v.%v = %v.%v",
@@ -124,6 +112,26 @@ func (queryBuilder *QueryBuilder) addOTM(fieldInterface interface{}) {
 		getPKFieldSelfCOLUMNTagFromModel(queryBuilder.model),
 		queryBuilder.getTableName(target.Type().Name()),
 		targetAssociatedColumn)
+	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
+}
+
+func (queryBuilder *QueryBuilder) addMTM(fieldInterface interface{}) {
+	relationship := fieldInterface.(*models.ManyToManyRelationShip)
+	target := reflect.ValueOf(relationship.Target)
+	intermediateTarget := reflect.ValueOf(relationship.IntermediateTarget).Elem()
+
+	stringJoin := fmt.Sprintf("LEFT JOIN %v ON %v.%v = %v.%v INNER JOIN %v ON %v.%v = %v.%v",
+		queryBuilder.getTableName(intermediateTarget.Type().Name()),
+		queryBuilder.getTableName(queryBuilder.getModelName()),
+		getPKFieldSelfCOLUMNTagFromModel(queryBuilder.model),
+		queryBuilder.getTableName(intermediateTarget.Type().Name()),
+		getAssociatedColumnFromReverse(queryBuilder.model, intermediateTarget),
+
+		queryBuilder.getTableName(target.Elem().Type().Name()),
+		queryBuilder.getTableName(intermediateTarget.Type().Name()),
+		getAssociatedColumnFromReverse(target.Interface(), intermediateTarget),
+		queryBuilder.getTableName(target.Elem().Type().Name()),
+		getPKFieldSelfCOLUMNTagFromModel(target.Interface()))
 	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
 }
 
@@ -173,6 +181,8 @@ func (queryBuilder *QueryBuilder) Consider(fieldName string) {
 			queryBuilder.addMTO(fieldInterface)
 		case *models.OneToManyRelationShip:
 			queryBuilder.addOTM(fieldInterface)
+		case *models.ManyToManyRelationShip:
+			queryBuilder.addMTM(fieldInterface)
 		}
 	}
 }
