@@ -182,9 +182,11 @@ func (queryBuilder *QueryBuilder) ApplyQuery() ([]interface{}, error) {
 
 	var modelList []interface{}
 	rows, err := connection.Db.Query(queryBuilder.constructSql())
+
 	if err == nil {
+		var newModel interface{}
 		for rows.Next() {
-			newModel, err := queryBuilder.hydrateOne(rows.Scan)
+			newModel, err = queryBuilder.hydrateOne(rows.Scan)
 
 			if err != nil {
 				break
