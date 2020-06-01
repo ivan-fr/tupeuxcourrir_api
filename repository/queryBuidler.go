@@ -103,12 +103,13 @@ func (queryBuilder *QueryBuilder) addOTM(fieldInterface interface{}) {
 		targetMTO := target.FieldByName(relationship.FieldMTO).Interface().(*models.ManyToOneRelationShip)
 		targetAssociatedColumn = targetMTO.AssociateColumn
 	} else {
+		typeOfApplierQueryModel := reflect.TypeOf(queryBuilder.model).Elem()
 		var field reflect.Value
 		for i := 0; i < target.NumField(); i++ {
 			field = target.Field(i)
 			if field.Kind() == reflect.Ptr {
 				if v, ok := field.Interface().(*models.ManyToOneRelationShip); ok {
-					if reflect.TypeOf(v.Target).Elem() == target.Type() {
+					if reflect.TypeOf(v.Target).Elem() == typeOfApplierQueryModel {
 						targetAssociatedColumn = v.AssociateColumn
 						break
 					}
