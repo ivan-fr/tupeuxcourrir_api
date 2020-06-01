@@ -197,7 +197,7 @@ func (queryBuilder *QueryBuilder) ApplyQuery() ([]interface{}, error) {
 	if err == nil {
 		var newModel interface{}
 		for rows.Next() {
-			newModel, err = queryBuilder.hydrateOne(rows.Scan)
+			newModel, err = queryBuilder.hydrate(rows.Scan)
 
 			if err != nil {
 				break
@@ -215,7 +215,7 @@ func (queryBuilder *QueryBuilder) ApplyQueryRow() (interface{}, error) {
 
 	row := connection.Db.QueryRow(queryBuilder.constructSql())
 
-	newModel, err := queryBuilder.hydrateOne(row.Scan)
+	newModel, err := queryBuilder.hydrate(row.Scan)
 
 	return newModel, err
 }

@@ -1,14 +1,13 @@
 package repository
 
 import (
-	"errors"
 	"reflect"
 	"tupeuxcourrir_api/models"
 )
 
 type QueryApplier struct {
-	model             interface{}
-	relationshipOrder []interface{}
+	model                   interface{}
+	relationshipTargetOrder []interface{}
 }
 
 func (queryApplier *QueryApplier) getModelName() string {
@@ -16,46 +15,16 @@ func (queryApplier *QueryApplier) getModelName() string {
 	return modelName
 }
 
-func (queryApplier *QueryApplier) getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
-	reflectModel := reflect.ValueOf(model)
-	if reflectModel.Kind() != reflect.Ptr {
-		return make([]interface{}, 0, 0),
-			errors.New("must pass a pointer, not a value")
-	}
-
-	reflectModel = reflectModel.Elem()
-	fieldsTab := make([]interface{}, reflectModel.NumField())
-	var field reflect.Value
-
-	for i := 0; i < reflectModel.NumField(); i++ {
-		field = reflectModel.Field(i)
-		_, ok := field.Interface().(*models.ManyToOneRelationShip)
-		_, ok1 := field.Interface().(*models.OneToManyRelationShip)
-		_, ok2 := field.Interface().(*models.ManyToOneRelationShip)
-
-		if !ok && !ok1 && !ok2 {
-			fieldsTab = append(fieldsTab, field.Addr())
-		}
-	}
-
-	return fieldsTab, nil
-}
-
-func (queryApplier *QueryApplier) newModel() interface{} {
-	modelValue := reflect.ValueOf(queryApplier.model)
-	if modelValue.Kind() == reflect.Ptr {
-		modelValue = reflect.Indirect(modelValue)
-	} else {
-		panic("the model passed to this queryBuilder must be a pointer")
-	}
-	return reflect.New(modelValue.Type()).Interface()
-}
-
-func (queryApplier *QueryApplier) hydrateOne(scan func(dest ...interface{}) error) (interface{}, error) {
-	var newModel = queryApplier.newModel()
-	addrFields, err := queryApplier.getAddrFieldsToScan(&newModel)
+func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) (interface{}, error) {
+	var newModel = newModel(queryApplier.model)
+	addrFields, err := getAddrFieldsToScan(&newModel)
 
 	if err == nil {
+
+		for _, relationshipTarget := range queryApplier.relationshipTargetOrder {
+
+		}
+
 		err = scan(addrFields...)
 	}
 
@@ -66,9 +35,21 @@ func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool
 	result := false
 
 	switch relationship.(type) {
-	case *models.ManyToManyRelationShip, *models.ManyToOneRelationShip, *models.OneToManyRelationShip:
+	case *models.ManyToManyRelationShip:
+		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+			relationship.(*models.ManyToManyRelationShip).IntermediateTarget)
+		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+			relationship.(*models.ManyToManyRelationShip).Target)
 		result = true
-		queryApplier.relationshipOrder = append(queryApplier.relationshipOrder, relationship)
+	case *models.ManyToOneRelationShip:
+		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+			relationship.(*models.ManyToOneRelationShip).Target)
+		result = true
+
+	case *models.OneToManyRelationShip:
+		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+			relationship.(*models.OneToManyRelationShip).Target)
+		result = true
 	}
 
 	return result

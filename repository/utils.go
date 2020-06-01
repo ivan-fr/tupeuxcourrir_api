@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"tupeuxcourrir_api/models"
@@ -59,4 +60,38 @@ func getAssociatedColumnFromReverse(target interface{}, targetStructFields refle
 	}
 
 	return associatedColumn
+}
+
+func newModel(model interface{}) interface{} {
+	modelValue := reflect.ValueOf(model)
+	if modelValue.Kind() == reflect.Ptr {
+		modelValue = reflect.Indirect(modelValue)
+	}
+
+	return reflect.New(modelValue.Type()).Interface()
+}
+
+func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
+	reflectModel := reflect.ValueOf(model)
+	if reflectModel.Kind() != reflect.Ptr {
+		return make([]interface{}, 0, 0),
+			errors.New("must pass a pointer, not a value")
+	}
+
+	reflectModel = reflectModel.Elem()
+	fieldsTab := make([]interface{}, reflectModel.NumField())
+	var field reflect.Value
+
+	for i := 0; i < reflectModel.NumField(); i++ {
+		field = reflectModel.Field(i)
+		_, ok := field.Interface().(*models.ManyToOneRelationShip)
+		_, ok1 := field.Interface().(*models.OneToManyRelationShip)
+		_, ok2 := field.Interface().(*models.ManyToOneRelationShip)
+
+		if !ok && !ok1 && !ok2 {
+			fieldsTab = append(fieldsTab, field.Addr())
+		}
+	}
+
+	return fieldsTab, nil
 }
