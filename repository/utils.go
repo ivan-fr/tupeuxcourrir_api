@@ -79,7 +79,7 @@ func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
 	}
 
 	reflectModel = reflectModel.Elem()
-	fieldsTab := make([]interface{}, reflectModel.NumField())
+	fieldsTab := make([]interface{}, 0)
 	var field reflect.Value
 
 	for i := 0; i < reflectModel.NumField(); i++ {
@@ -89,9 +89,19 @@ func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
 		_, ok2 := field.Interface().(*models.ManyToOneRelationShip)
 
 		if !ok && !ok1 && !ok2 {
-			fieldsTab = append(fieldsTab, field.Addr())
+			fieldsTab = append(fieldsTab, field.Addr().Interface())
 		}
 	}
 
 	return fieldsTab, nil
+}
+
+func getModelName(model interface{}) string {
+	typeof := reflect.TypeOf(model)
+
+	if typeof.Kind() == reflect.Ptr {
+		typeof = typeof.Elem()
+	}
+
+	return typeof.Name()
 }

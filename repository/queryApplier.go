@@ -1,34 +1,48 @@
 package repository
 
 import (
-	"reflect"
 	"tupeuxcourrir_api/models"
 )
+
+type ModelsOrderedToScan struct {
+	modelName string
+	model     interface{}
+}
 
 type QueryApplier struct {
 	model                   interface{}
 	relationshipTargetOrder []interface{}
 }
 
-func (queryApplier *QueryApplier) getModelName() string {
-	modelName := reflect.TypeOf(queryApplier.model).Elem().Name()
-	return modelName
-}
-
-func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) (interface{}, error) {
-	var newModel = newModel(queryApplier.model)
-	addrFields, err := getAddrFieldsToScan(&newModel)
-
-	if err == nil {
-
-		for _, relationshipTarget := range queryApplier.relationshipTargetOrder {
-
-		}
-
-		err = scan(addrFields...)
+func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) ([]ModelsOrderedToScan, error) {
+	var newModels = []ModelsOrderedToScan{
+		{getModelName(queryApplier.model), newModel(queryApplier.model)},
 	}
 
-	return newModel, err
+	var considerateModel interface{} = newModels[0].model
+	var addrs []interface{}
+	addrFields, err := getAddrFieldsToScan(&considerateModel)
+
+	if err == nil {
+		for i, relationshipTarget := range queryApplier.relationshipTargetOrder {
+			newModels = append(newModels,
+				ModelsOrderedToScan{getModelName(relationshipTarget),
+					newModel(relationshipTarget)})
+			considerateModel = newModels[i+1].model
+			addrs, err = getAddrFieldsToScan(&considerateModel)
+			addrFields = append(addrFields, addrs...)
+
+			if err != nil {
+				break
+			}
+		}
+
+		if err == nil {
+			err = scan(addrFields...)
+		}
+	}
+
+	return newModels, err
 }
 
 func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool {

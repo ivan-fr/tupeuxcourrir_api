@@ -58,7 +58,7 @@ func (queryBuilder *QueryBuilder) addPrefixToSections(prefix string) {
 }
 
 func (queryBuilder *QueryBuilder) constructSql() string {
-	queryBuilder.SectionFrom = fmt.Sprintf("FROM %v", queryBuilder.getTableName(queryBuilder.getModelName()))
+	queryBuilder.SectionFrom = fmt.Sprintf("FROM %v", queryBuilder.getTableName(getModelName(queryBuilder.model)))
 
 	queryBuilder.addPrefixToSections(" ")
 	queryBuilder.SectionSelect = "SELECT *"
@@ -86,7 +86,7 @@ func (queryBuilder *QueryBuilder) addMTO(fieldInterface interface{}) {
 	target := reflect.ValueOf(relationship.Target)
 	stringJoin := fmt.Sprintf("INNER JOIN %v ON %v.%v = %v.%v",
 		queryBuilder.getTableName(target.Elem().Type().Name()),
-		queryBuilder.getTableName(queryBuilder.getModelName()),
+		queryBuilder.getTableName(getModelName(queryBuilder.model)),
 		relationship.AssociateColumn,
 		queryBuilder.getTableName(target.Elem().Type().Name()),
 		getPKFieldSelfCOLUMNTagFromModel(target.Interface()))
@@ -108,7 +108,7 @@ func (queryBuilder *QueryBuilder) addOTM(fieldInterface interface{}) {
 
 	stringJoin := fmt.Sprintf("LEFT JOIN %v ON %v.%v = %v.%v",
 		queryBuilder.getTableName(target.Type().Name()),
-		queryBuilder.getTableName(queryBuilder.getModelName()),
+		queryBuilder.getTableName(getModelName(queryBuilder.model)),
 		getPKFieldSelfCOLUMNTagFromModel(queryBuilder.model),
 		queryBuilder.getTableName(target.Type().Name()),
 		targetAssociatedColumn)
@@ -122,7 +122,7 @@ func (queryBuilder *QueryBuilder) addMTM(fieldInterface interface{}) {
 
 	stringJoin := fmt.Sprintf("LEFT JOIN %v ON %v.%v = %v.%v INNER JOIN %v ON %v.%v = %v.%v",
 		queryBuilder.getTableName(intermediateTarget.Type().Name()),
-		queryBuilder.getTableName(queryBuilder.getModelName()),
+		queryBuilder.getTableName(getModelName(queryBuilder.model)),
 		getPKFieldSelfCOLUMNTagFromModel(queryBuilder.model),
 		queryBuilder.getTableName(intermediateTarget.Type().Name()),
 		getAssociatedColumnFromReverse(queryBuilder.model, intermediateTarget),
@@ -187,15 +187,15 @@ func (queryBuilder *QueryBuilder) Consider(fieldName string) {
 	}
 }
 
-func (queryBuilder *QueryBuilder) ApplyQuery() ([]interface{}, error) {
+func (queryBuilder *QueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, error) {
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clear()
 
-	var modelList []interface{}
+	var modelList [][]ModelsOrderedToScan
 	rows, err := connection.Db.Query(queryBuilder.constructSql())
 
 	if err == nil {
-		var newModel interface{}
+		var newModel []ModelsOrderedToScan
 		for rows.Next() {
 			newModel, err = queryBuilder.hydrate(rows.Scan)
 
@@ -209,7 +209,7 @@ func (queryBuilder *QueryBuilder) ApplyQuery() ([]interface{}, error) {
 	return modelList, err
 }
 
-func (queryBuilder *QueryBuilder) ApplyQueryRow() (interface{}, error) {
+func (queryBuilder *QueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, error) {
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clear()
 
