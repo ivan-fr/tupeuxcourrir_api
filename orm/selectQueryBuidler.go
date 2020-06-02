@@ -18,32 +18,6 @@ type SelectQueryBuilder struct {
 	SectionJoin   []string
 }
 
-func (queryBuilder *SelectQueryBuilder) putIntermediateString(baseSql *string,
-	intermediateStringMap string,
-	mapIsSetter bool,
-	theMap map[string]string) string {
-
-	var newSql = *baseSql
-	var format string
-
-	if mapIsSetter {
-		format = "%v %v='%v'"
-	} else {
-		format = "%v %v %v"
-	}
-
-	var i int
-	for key, value := range theMap {
-		newSql = fmt.Sprintf(format, newSql, key, value)
-		if 0 <= i && i <= (len(theMap)-2) {
-			newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
-		}
-		i++
-	}
-
-	return newSql
-}
-
 func (queryBuilder *SelectQueryBuilder) addPrefixToSections(prefix string) {
 	reflectQueryBuilder := reflect.ValueOf(queryBuilder).Elem()
 	var field reflect.Value
@@ -56,7 +30,7 @@ func (queryBuilder *SelectQueryBuilder) addPrefixToSections(prefix string) {
 	}
 }
 
-func (queryBuilder *SelectQueryBuilder) constructSql() string {
+func (queryBuilder *SelectQueryBuilder) ConstructSql() string {
 	queryBuilder.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(queryBuilder.model)))
 
 	queryBuilder.addPrefixToSections(" ")
@@ -133,7 +107,7 @@ func (queryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{}) {
 func (queryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]string) *SelectQueryBuilder {
 	sqlConstruct := "ORDER BY"
 
-	queryBuilder.SectionOrder = queryBuilder.putIntermediateString(&sqlConstruct,
+	queryBuilder.SectionOrder = putIntermediateString(&sqlConstruct,
 		",",
 		false,
 		orderFilter)
@@ -149,7 +123,7 @@ func (queryBuilder *SelectQueryBuilder) Limit(limit string) *SelectQueryBuilder 
 func (queryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]string) *SelectQueryBuilder {
 	sqlConstruct := "WHERE"
 
-	queryBuilder.SectionWhere = queryBuilder.putIntermediateString(&sqlConstruct,
+	queryBuilder.SectionWhere = putIntermediateString(&sqlConstruct,
 		" and",
 		true,
 		mapFilter)
@@ -167,7 +141,7 @@ func (queryBuilder *SelectQueryBuilder) Clean() {
 	queryBuilder.QueryApplier.Clean()
 }
 
-func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) {
+func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) *SelectQueryBuilder {
 	reflectQueryBuilder := reflect.ValueOf(queryBuilder.model).Elem()
 	fieldInterface := reflectQueryBuilder.FieldByName(fieldName).Interface()
 
@@ -181,6 +155,8 @@ func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) {
 			queryBuilder.addMTM(fieldInterface)
 		}
 	}
+
+	return queryBuilder
 }
 
 func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, error) {
@@ -188,7 +164,7 @@ func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, e
 	defer queryBuilder.Clean()
 
 	var modelList [][]ModelsOrderedToScan
-	rows, err := connection.Db.Query(queryBuilder.constructSql())
+	rows, err := connection.Db.Query(queryBuilder.ConstructSql())
 
 	if err == nil {
 		var newModel []ModelsOrderedToScan
@@ -209,8 +185,12 @@ func (queryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, 
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clean()
 
-	row := connection.Db.QueryRow(queryBuilder.constructSql())
+	row := connection.Db.QueryRow(queryBuilder.ConstructSql())
 	newModel, err := queryBuilder.hydrate(row.Scan)
 
 	return newModel, err
+}
+
+func NewSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
+	return &SelectQueryBuilder{QueryApplier: QueryApplier{model: model}}
 }

@@ -12,6 +12,39 @@ func getTableName(name string) string {
 	return strings.ToLower(fmt.Sprintf("%vs", name))
 }
 
+func putIntermediateString(baseSql *string,
+	intermediateStringMap string,
+	mapIsSetter bool,
+	theMap map[string]string) string {
+
+	var newSql = *baseSql
+	var format string
+	var formatAlternative string
+
+	if mapIsSetter {
+		format = "%v %v = '%v'"
+	} else {
+		format = "%v %v %v"
+		formatAlternative = "%v %v"
+	}
+
+	var i int
+	for key, value := range theMap {
+		if !mapIsSetter && formatAlternative != "" && value == "" {
+			newSql = fmt.Sprintf(formatAlternative, newSql, key)
+		} else {
+			newSql = fmt.Sprintf(format, newSql, key, value)
+		}
+
+		if 0 <= i && i <= (len(theMap)-2) {
+			newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
+		}
+		i++
+	}
+
+	return newSql
+}
+
 func getPKFieldSelfCOLUMNTagFromModel(model interface{}) string {
 	reflectModel := reflect.TypeOf(model).Elem()
 	var field reflect.StructField
