@@ -157,13 +157,14 @@ func (queryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]string) *Sel
 	return queryBuilder
 }
 
-func (queryBuilder *SelectQueryBuilder) Clear() {
+func (queryBuilder *SelectQueryBuilder) Clean() {
 	queryBuilder.SectionOffset = ""
 	queryBuilder.SectionLimit = ""
 	queryBuilder.SectionOrder = ""
 	queryBuilder.SectionWhere = ""
 	queryBuilder.SectionFrom = ""
 	queryBuilder.SectionSelect = ""
+	queryBuilder.QueryApplier.Clean()
 }
 
 func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) {
@@ -184,7 +185,7 @@ func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) {
 
 func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, error) {
 	connection := db.GetConnectionFromDB()
-	defer queryBuilder.Clear()
+	defer queryBuilder.Clean()
 
 	var modelList [][]ModelsOrderedToScan
 	rows, err := connection.Db.Query(queryBuilder.constructSql())
@@ -206,7 +207,7 @@ func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, e
 
 func (queryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, error) {
 	connection := db.GetConnectionFromDB()
-	defer queryBuilder.Clear()
+	defer queryBuilder.Clean()
 
 	row := connection.Db.QueryRow(queryBuilder.constructSql())
 	newModel, err := queryBuilder.hydrate(row.Scan)

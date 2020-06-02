@@ -5,8 +5,8 @@ import (
 )
 
 type ModelsOrderedToScan struct {
-	modelName string
-	model     interface{}
+	ModelName string
+	Model     interface{}
 }
 
 type QueryApplier struct {
@@ -19,7 +19,7 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 		{getModelName(queryApplier.model), newModel(queryApplier.model)},
 	}
 
-	var considerateModel interface{} = newModels[0].model
+	var considerateModel interface{} = newModels[0].Model
 	var addrs []interface{}
 	addrFields, err := getAddrFieldsToScan(&considerateModel)
 
@@ -28,7 +28,7 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 			newModels = append(newModels,
 				ModelsOrderedToScan{getModelName(relationshipTarget),
 					newModel(relationshipTarget)})
-			considerateModel = newModels[i+1].model
+			considerateModel = newModels[i+1].Model
 			addrs, err = getAddrFieldsToScan(&considerateModel)
 			addrFields = append(addrFields, addrs...)
 
@@ -69,4 +69,14 @@ func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool
 	}
 
 	return result
+}
+
+func (queryApplier *QueryApplier) SetModel(model interface{}) {
+	queryApplier.Clean()
+	queryApplier.model = nil
+	queryApplier.model = model
+}
+
+func (queryApplier *QueryApplier) Clean() {
+	queryApplier.relationshipTargetOrder = nil
 }

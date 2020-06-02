@@ -1,6 +1,10 @@
 package orm
 
-import "fmt"
+import (
+	"database/sql"
+	"fmt"
+	"tupeuxcourrir_api/db"
+)
 import "reflect"
 
 type InsertQueryBuilder struct {
@@ -8,13 +12,16 @@ type InsertQueryBuilder struct {
 	modelValues    []interface{}
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) constructSql() (string, error) {
-	var sql = fmt.Sprintf("INSERT INTO %v VALUES",
+func (insertQueryBuilder *InsertQueryBuilder) constructSql() string {
+	if len(insertQueryBuilder.modelValues) > 0 {
+		return ""
+	}
+
+	var theSql = fmt.Sprintf("INSERT INTO %v VALUES",
 		getModelName(getModelName(insertQueryBuilder.referenceModel)))
 
 	var sectionValues string
 	var valueOfModel reflect.Value
-	var err error
 
 	for i, modelValue := range insertQueryBuilder.modelValues {
 		valueOfModel = reflect.ValueOf(modelValue).Elem()
@@ -38,13 +45,29 @@ func (insertQueryBuilder *InsertQueryBuilder) constructSql() (string, error) {
 
 		switch {
 		case 0 == i:
-			sql = fmt.Sprintf("%v %v", sql, sectionValues)
+			theSql = fmt.Sprintf("%v %v", theSql, sectionValues)
 		case 1 <= i && i <= (len(insertQueryBuilder.modelValues)-2):
-			sql = fmt.Sprintf("%v, %v", sql, sectionValues)
+			theSql = fmt.Sprintf("%v, %v", theSql, sectionValues)
 		case i == valueOfModel.NumField()-1:
-			sql = fmt.Sprintf("%v, %v;", sql, sectionValues)
+			theSql = fmt.Sprintf("%v, %v;", theSql, sectionValues)
 		}
 	}
 
-	return sql, err
+	return theSql
+}
+
+func (insertQueryBuilder *InsertQueryBuilder) SetReferenceModel(model interface{}) {
+	insertQueryBuilder.Clean()
+	insertQueryBuilder.referenceModel = nil
+	insertQueryBuilder.referenceModel = model
+}
+
+func (insertQueryBuilder *InsertQueryBuilder) Clean() {
+	insertQueryBuilder.modelValues = nil
+}
+
+func (insertQueryBuilder *InsertQueryBuilder) ApplyInsert() (sql.Result, error) {
+	connection := db.GetConnectionFromDB()
+	defer insertQueryBuilder.Clean()
+	return connection.Db.Exec(insertQueryBuilder.constructSql())
 }
