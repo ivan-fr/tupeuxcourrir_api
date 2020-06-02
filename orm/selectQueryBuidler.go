@@ -3,12 +3,11 @@ package orm
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"tupeuxcourrir_api/db"
 	"tupeuxcourrir_api/models"
 )
 
-type QueryBuilder struct {
+type SelectQueryBuilder struct {
 	QueryApplier
 	SectionWhere  string
 	SectionOrder  string
@@ -19,7 +18,7 @@ type QueryBuilder struct {
 	SectionJoin   []string
 }
 
-func (queryBuilder *QueryBuilder) putIntermediateString(baseSql *string,
+func (queryBuilder *SelectQueryBuilder) putIntermediateString(baseSql *string,
 	intermediateStringMap string,
 	mapIsSetter bool,
 	theMap map[string]string) string {
@@ -45,7 +44,7 @@ func (queryBuilder *QueryBuilder) putIntermediateString(baseSql *string,
 	return newSql
 }
 
-func (queryBuilder *QueryBuilder) addPrefixToSections(prefix string) {
+func (queryBuilder *SelectQueryBuilder) addPrefixToSections(prefix string) {
 	reflectQueryBuilder := reflect.ValueOf(queryBuilder).Elem()
 	var field reflect.Value
 
@@ -57,8 +56,8 @@ func (queryBuilder *QueryBuilder) addPrefixToSections(prefix string) {
 	}
 }
 
-func (queryBuilder *QueryBuilder) constructSql() string {
-	queryBuilder.SectionFrom = fmt.Sprintf("FROM %v", queryBuilder.getTableName(getModelName(queryBuilder.model)))
+func (queryBuilder *SelectQueryBuilder) constructSql() string {
+	queryBuilder.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(queryBuilder.model)))
 
 	queryBuilder.addPrefixToSections(" ")
 	queryBuilder.SectionSelect = "SELECT *"
@@ -77,23 +76,19 @@ func (queryBuilder *QueryBuilder) constructSql() string {
 		queryBuilder.SectionOffset)
 }
 
-func (queryBuilder *QueryBuilder) getTableName(name string) string {
-	return strings.ToLower(fmt.Sprintf("%vs", name))
-}
-
-func (queryBuilder *QueryBuilder) addMTO(fieldInterface interface{}) {
+func (queryBuilder *SelectQueryBuilder) addMTO(fieldInterface interface{}) {
 	relationship := fieldInterface.(*models.ManyToOneRelationShip)
 	target := reflect.ValueOf(relationship.Target)
 	stringJoin := fmt.Sprintf("INNER JOIN %v ON %v.%v = %v.%v",
-		queryBuilder.getTableName(target.Elem().Type().Name()),
-		queryBuilder.getTableName(getModelName(queryBuilder.model)),
+		getTableName(target.Elem().Type().Name()),
+		getTableName(getModelName(queryBuilder.model)),
 		relationship.AssociateColumn,
-		queryBuilder.getTableName(target.Elem().Type().Name()),
+		getTableName(target.Elem().Type().Name()),
 		getPKFieldSelfCOLUMNTagFromModel(target.Interface()))
 	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
 }
 
-func (queryBuilder *QueryBuilder) addOTM(fieldInterface interface{}) {
+func (queryBuilder *SelectQueryBuilder) addOTM(fieldInterface interface{}) {
 	relationship := fieldInterface.(*models.OneToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target).Elem()
 
@@ -107,35 +102,35 @@ func (queryBuilder *QueryBuilder) addOTM(fieldInterface interface{}) {
 	}
 
 	stringJoin := fmt.Sprintf("LEFT JOIN %v ON %v.%v = %v.%v",
-		queryBuilder.getTableName(target.Type().Name()),
-		queryBuilder.getTableName(getModelName(queryBuilder.model)),
+		getTableName(target.Type().Name()),
+		getTableName(getModelName(queryBuilder.model)),
 		getPKFieldSelfCOLUMNTagFromModel(queryBuilder.model),
-		queryBuilder.getTableName(target.Type().Name()),
+		getTableName(target.Type().Name()),
 		targetAssociatedColumn)
 	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
 }
 
-func (queryBuilder *QueryBuilder) addMTM(fieldInterface interface{}) {
+func (queryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{}) {
 	relationship := fieldInterface.(*models.ManyToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target)
 	intermediateTarget := reflect.ValueOf(relationship.IntermediateTarget).Elem()
 
 	stringJoin := fmt.Sprintf("LEFT JOIN %v ON %v.%v = %v.%v INNER JOIN %v ON %v.%v = %v.%v",
-		queryBuilder.getTableName(intermediateTarget.Type().Name()),
-		queryBuilder.getTableName(getModelName(queryBuilder.model)),
+		getTableName(intermediateTarget.Type().Name()),
+		getTableName(getModelName(queryBuilder.model)),
 		getPKFieldSelfCOLUMNTagFromModel(queryBuilder.model),
-		queryBuilder.getTableName(intermediateTarget.Type().Name()),
+		getTableName(intermediateTarget.Type().Name()),
 		getAssociatedColumnFromReverse(queryBuilder.model, intermediateTarget),
 
-		queryBuilder.getTableName(target.Elem().Type().Name()),
-		queryBuilder.getTableName(intermediateTarget.Type().Name()),
+		getTableName(target.Elem().Type().Name()),
+		getTableName(intermediateTarget.Type().Name()),
 		getAssociatedColumnFromReverse(target.Interface(), intermediateTarget),
-		queryBuilder.getTableName(target.Elem().Type().Name()),
+		getTableName(target.Elem().Type().Name()),
 		getPKFieldSelfCOLUMNTagFromModel(target.Interface()))
 	queryBuilder.SectionJoin = append(queryBuilder.SectionJoin, stringJoin)
 }
 
-func (queryBuilder *QueryBuilder) OrderBy(orderFilter map[string]string) *QueryBuilder {
+func (queryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]string) *SelectQueryBuilder {
 	sqlConstruct := "ORDER BY"
 
 	queryBuilder.SectionOrder = queryBuilder.putIntermediateString(&sqlConstruct,
@@ -146,12 +141,12 @@ func (queryBuilder *QueryBuilder) OrderBy(orderFilter map[string]string) *QueryB
 	return queryBuilder
 }
 
-func (queryBuilder *QueryBuilder) Limit(limit string) *QueryBuilder {
+func (queryBuilder *SelectQueryBuilder) Limit(limit string) *SelectQueryBuilder {
 	queryBuilder.SectionLimit = fmt.Sprintf("LIMIT %v", limit)
 	return queryBuilder
 }
 
-func (queryBuilder *QueryBuilder) FindBy(mapFilter map[string]string) *QueryBuilder {
+func (queryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]string) *SelectQueryBuilder {
 	sqlConstruct := "WHERE"
 
 	queryBuilder.SectionWhere = queryBuilder.putIntermediateString(&sqlConstruct,
@@ -162,7 +157,7 @@ func (queryBuilder *QueryBuilder) FindBy(mapFilter map[string]string) *QueryBuil
 	return queryBuilder
 }
 
-func (queryBuilder *QueryBuilder) Clear() {
+func (queryBuilder *SelectQueryBuilder) Clear() {
 	queryBuilder.SectionOffset = ""
 	queryBuilder.SectionLimit = ""
 	queryBuilder.SectionOrder = ""
@@ -171,7 +166,7 @@ func (queryBuilder *QueryBuilder) Clear() {
 	queryBuilder.SectionSelect = ""
 }
 
-func (queryBuilder *QueryBuilder) Consider(fieldName string) {
+func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) {
 	reflectQueryBuilder := reflect.ValueOf(queryBuilder.model).Elem()
 	fieldInterface := reflectQueryBuilder.FieldByName(fieldName).Interface()
 
@@ -187,7 +182,7 @@ func (queryBuilder *QueryBuilder) Consider(fieldName string) {
 	}
 }
 
-func (queryBuilder *QueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, error) {
+func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, error) {
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clear()
 
@@ -209,7 +204,7 @@ func (queryBuilder *QueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, error) 
 	return modelList, err
 }
 
-func (queryBuilder *QueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, error) {
+func (queryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, error) {
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clear()
 

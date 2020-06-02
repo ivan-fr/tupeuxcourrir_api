@@ -37,6 +37,8 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 			}
 		}
 
+		addrs = nil
+
 		if err == nil {
 			err = scan(addrFields...)
 		}

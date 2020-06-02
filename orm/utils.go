@@ -2,10 +2,15 @@ package orm
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"tupeuxcourrir_api/models"
 )
+
+func getTableName(name string) string {
+	return strings.ToLower(fmt.Sprintf("%vs", name))
+}
 
 func getPKFieldSelfCOLUMNTagFromModel(model interface{}) string {
 	reflectModel := reflect.TypeOf(model).Elem()
@@ -84,16 +89,20 @@ func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
 
 	for i := 0; i < reflectModel.NumField(); i++ {
 		field = reflectModel.Field(i)
-		_, ok := field.Interface().(*models.ManyToOneRelationShip)
-		_, ok1 := field.Interface().(*models.OneToManyRelationShip)
-		_, ok2 := field.Interface().(*models.ManyToOneRelationShip)
-
-		if !ok && !ok1 && !ok2 {
+		if !isRelationshipField(field) {
 			fieldsTab = append(fieldsTab, field.Addr().Interface())
 		}
 	}
 
 	return fieldsTab, nil
+}
+
+func isRelationshipField(field reflect.Value) bool {
+	_, ok := field.Interface().(*models.ManyToOneRelationShip)
+	_, ok1 := field.Interface().(*models.OneToManyRelationShip)
+	_, ok2 := field.Interface().(*models.ManyToOneRelationShip)
+
+	return ok || ok1 || ok2
 }
 
 func getModelName(model interface{}) string {
