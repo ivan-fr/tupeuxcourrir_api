@@ -1,4 +1,4 @@
-package models
+package orm
 
 type ManyToManyRelationShip struct {
 	Target             interface{}

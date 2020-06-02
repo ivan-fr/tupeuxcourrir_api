@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"time"
+	"tupeuxcourrir_api/orm"
+)
 
 type Thread struct {
 	IdThread              int `orm:"PK;SelfCOLUMN:idThread"`
@@ -9,17 +12,17 @@ type Thread struct {
 	Reciprocal            bool
 	InitiatorThreadIdUser int
 	ReceiverThreadIdUser  int
-	InitiatorThread       *ManyToOneRelationShip
-	ReceiverThread        *ManyToOneRelationShip
-	Messages              *OneToManyRelationShip
+	InitiatorThread       *orm.ManyToOneRelationShip
+	ReceiverThread        *orm.ManyToOneRelationShip
+	Messages              *orm.OneToManyRelationShip
 }
 
-func NewThread() Thread {
+func NewThread() *Thread {
 	message := NewMessage()
 
 	thread := Thread{}
-	thread.InitiatorThread = &ManyToOneRelationShip{Target: &User{}, AssociateColumn: "initiator_thread_idUser"}
-	thread.ReceiverThread = &ManyToOneRelationShip{Target: &Thread{}, AssociateColumn: "receiver_thread_idUser"}
-	thread.Messages = &OneToManyRelationShip{Target: &message, FieldMTO: "Thread"}
-	return thread
+	thread.InitiatorThread = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "initiator_thread_idUser"}
+	thread.ReceiverThread = &orm.ManyToOneRelationShip{Target: &Thread{}, AssociateColumn: "receiver_thread_idUser"}
+	thread.Messages = &orm.OneToManyRelationShip{Target: message, FieldMTO: "Thread"}
+	return &thread
 }

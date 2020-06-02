@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"tupeuxcourrir_api/models"
 )
 
 func getTableName(name string) string {
@@ -88,7 +87,7 @@ func getAssociatedColumnFromReverse(target interface{}, targetStructFields refle
 	for i := 0; i < targetStructFields.NumField(); i++ {
 		field = targetStructFields.Field(i)
 		if field.Kind() == reflect.Ptr {
-			if v, ok := field.Interface().(*models.ManyToOneRelationShip); ok {
+			if v, ok := field.Interface().(*ManyToOneRelationShip); ok {
 				if reflect.TypeOf(v.Target).Elem() == typeOfApplierQueryModel {
 					associatedColumn = v.AssociateColumn
 					break
@@ -131,9 +130,9 @@ func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
 }
 
 func isRelationshipField(field reflect.Value) bool {
-	_, ok := field.Interface().(*models.ManyToOneRelationShip)
-	_, ok1 := field.Interface().(*models.OneToManyRelationShip)
-	_, ok2 := field.Interface().(*models.ManyToOneRelationShip)
+	_, ok := field.Interface().(*ManyToOneRelationShip)
+	_, ok1 := field.Interface().(*OneToManyRelationShip)
+	_, ok2 := field.Interface().(*ManyToOneRelationShip)
 
 	return ok || ok1 || ok2
 }

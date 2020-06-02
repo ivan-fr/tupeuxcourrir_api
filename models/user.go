@@ -2,6 +2,7 @@ package models
 
 import (
 	"time"
+	"tupeuxcourrir_api/orm"
 )
 
 type User struct {
@@ -20,19 +21,19 @@ type User struct {
 	SentValidateMailAt       time.Time
 	SentChangePasswordMailAt time.Time
 	CreatedAt                time.Time
-	Roles                    *ManyToManyRelationShip
-	InitiatedThread          *OneToManyRelationShip
-	ReceivedThread           *OneToManyRelationShip
+	Roles                    *orm.ManyToManyRelationShip
+	InitiatedThread          *orm.OneToManyRelationShip
+	ReceivedThread           *orm.OneToManyRelationShip
 }
 
-func NewUser() User {
+func NewUser() *User {
 	usersRoles := NewUsersRole()
 	thread := NewThread()
 
 	user := User{}
-	user.Roles = &ManyToManyRelationShip{Target: &Role{}, IntermediateTarget: &usersRoles}
-	user.InitiatedThread = &OneToManyRelationShip{Target: &thread, FieldMTO: "InitiatorThread"}
-	user.ReceivedThread = &OneToManyRelationShip{Target: &thread, FieldMTO: "ReceiverThread"}
+	user.Roles = &orm.ManyToManyRelationShip{Target: &Role{}, IntermediateTarget: usersRoles}
+	user.InitiatedThread = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "InitiatorThread"}
+	user.ReceivedThread = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "ReceiverThread"}
 
-	return user
+	return &user
 }

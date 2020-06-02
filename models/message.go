@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"time"
+	"tupeuxcourrir_api/orm"
+)
 
 type Message struct {
 	IdMessage int `orm:"PK;SelfCOLUMN:idMessage"`
@@ -9,14 +12,14 @@ type Message struct {
 	UpdatedAt time.Time
 	UserId    int
 	ThreadId  int
-	User      *ManyToOneRelationShip
-	Thread    *ManyToOneRelationShip
+	User      *orm.ManyToOneRelationShip
+	Thread    *orm.ManyToOneRelationShip
 }
 
-func NewMessage() Message {
+func NewMessage() *Message {
 	message := Message{}
-	message.User = &ManyToOneRelationShip{Target: &User{}, AssociateColumn: "User_idUser"}
-	message.Thread = &ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "Thread_idThread"}
+	message.User = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "User_idUser"}
+	message.Thread = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "Thread_idThread"}
 
-	return message
+	return &message
 }

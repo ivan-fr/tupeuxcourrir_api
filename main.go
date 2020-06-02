@@ -11,7 +11,7 @@ func main() {
 	defer db.DeferClose()
 
 	var u = models.NewUser()
-	sQueryBuilder := orm.NewSelectQueryBuilder(&u).
+	sQueryBuilder := orm.NewSelectQueryBuilder(u).
 		FindBy(map[string]string{"id": "lol", "koko": "popo", "giro": "pipo"}).
 		Consider("InitiatedThread").
 		Consider("ReceivedThread").

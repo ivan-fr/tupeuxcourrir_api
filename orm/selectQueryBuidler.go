@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"tupeuxcourrir_api/db"
-	"tupeuxcourrir_api/models"
 )
 
 type SelectQueryBuilder struct {
@@ -51,7 +50,7 @@ func (queryBuilder *SelectQueryBuilder) ConstructSql() string {
 }
 
 func (queryBuilder *SelectQueryBuilder) addMTO(fieldInterface interface{}) {
-	relationship := fieldInterface.(*models.ManyToOneRelationShip)
+	relationship := fieldInterface.(*ManyToOneRelationShip)
 	target := reflect.ValueOf(relationship.Target)
 	stringJoin := fmt.Sprintf("INNER JOIN %v ON %v.%v = %v.%v",
 		getTableName(target.Elem().Type().Name()),
@@ -63,13 +62,13 @@ func (queryBuilder *SelectQueryBuilder) addMTO(fieldInterface interface{}) {
 }
 
 func (queryBuilder *SelectQueryBuilder) addOTM(fieldInterface interface{}) {
-	relationship := fieldInterface.(*models.OneToManyRelationShip)
+	relationship := fieldInterface.(*OneToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target).Elem()
 
 	var targetAssociatedColumn string
 
 	if relationship.FieldMTO != "" {
-		targetMTO := target.FieldByName(relationship.FieldMTO).Interface().(*models.ManyToOneRelationShip)
+		targetMTO := target.FieldByName(relationship.FieldMTO).Interface().(*ManyToOneRelationShip)
 		targetAssociatedColumn = targetMTO.AssociateColumn
 	} else {
 		targetAssociatedColumn = getAssociatedColumnFromReverse(queryBuilder.model, target)
@@ -85,7 +84,7 @@ func (queryBuilder *SelectQueryBuilder) addOTM(fieldInterface interface{}) {
 }
 
 func (queryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{}) {
-	relationship := fieldInterface.(*models.ManyToManyRelationShip)
+	relationship := fieldInterface.(*ManyToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target)
 	intermediateTarget := reflect.ValueOf(relationship.IntermediateTarget).Elem()
 
@@ -147,11 +146,11 @@ func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) *SelectQueryB
 
 	if queryBuilder.addRelationship(fieldInterface) {
 		switch fieldInterface.(type) {
-		case *models.ManyToOneRelationShip:
+		case *ManyToOneRelationShip:
 			queryBuilder.addMTO(fieldInterface)
-		case *models.OneToManyRelationShip:
+		case *OneToManyRelationShip:
 			queryBuilder.addOTM(fieldInterface)
-		case *models.ManyToManyRelationShip:
+		case *ManyToManyRelationShip:
 			queryBuilder.addMTM(fieldInterface)
 		}
 	}

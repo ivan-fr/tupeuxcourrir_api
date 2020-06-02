@@ -1,9 +1,5 @@
 package orm
 
-import (
-	"tupeuxcourrir_api/models"
-)
-
 type ModelsOrderedToScan struct {
 	ModelName string
 	Model     interface{}
@@ -51,20 +47,20 @@ func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool
 	result := false
 
 	switch relationship.(type) {
-	case *models.ManyToManyRelationShip:
+	case *ManyToManyRelationShip:
 		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
-			relationship.(*models.ManyToManyRelationShip).IntermediateTarget)
+			relationship.(*ManyToManyRelationShip).IntermediateTarget)
 		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
-			relationship.(*models.ManyToManyRelationShip).Target)
+			relationship.(*ManyToManyRelationShip).Target)
 		result = true
-	case *models.ManyToOneRelationShip:
+	case *ManyToOneRelationShip:
 		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
-			relationship.(*models.ManyToOneRelationShip).Target)
+			relationship.(*ManyToOneRelationShip).Target)
 		result = true
 
-	case *models.OneToManyRelationShip:
+	case *OneToManyRelationShip:
 		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
-			relationship.(*models.OneToManyRelationShip).Target)
+			relationship.(*OneToManyRelationShip).Target)
 		result = true
 	}
 
