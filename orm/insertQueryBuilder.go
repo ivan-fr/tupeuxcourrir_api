@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 	"tupeuxcourrir_api/db"
 )
@@ -15,26 +16,52 @@ type InsertQueryBuilder struct {
 
 func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
 	valueOfModel := reflect.ValueOf(modelValue).Elem()
+	var format1, format2, format string
 
-	sectionValues := "(NULL"
+	sectionValues := "("
 	for j := 0; j < valueOfModel.NumField(); j++ {
 		if j == 0 {
 			continue
 		}
 
-		var format string
-		var fieldTime, okTime = valueOfModel.Field(j).Interface().(time.Time)
-
-		if valueOfModel.Field(j).Kind() == reflect.String || okTime {
-			format = "%v, '%v'"
+		format1 = "%v"
+		if j == 1 {
+			format1 += "'%v'"
 		} else {
-			format = "%v, %v"
+			format1 += ", '%v'"
+		}
+
+		format2 = "%v"
+		if j == 1 {
+			format2 += "%v"
+		} else {
+			format2 += ", %v"
 		}
 
 		if !isRelationshipField(valueOfModel.Field(j)) {
+			var fieldTime, okTime = valueOfModel.Field(j).Interface().(time.Time)
+
 			if okTime {
-				sectionValues = fmt.Sprintf(format, sectionValues, fieldTime.String())
+				var valueToInsert string
+				switch {
+				case strings.Contains(valueOfModel.Type().Field(j).Name, "CreatedAt"):
+					format = format2
+					valueToInsert = "Now()"
+				case fieldTime.IsZero():
+					format = format2
+					valueToInsert = "NULL"
+				default:
+					format = format1
+					valueToInsert = fieldTime.Format("YYYY-MM-DD HH:MM:SS")
+				}
+				sectionValues = fmt.Sprintf(format, sectionValues, valueToInsert)
 			} else {
+				if valueOfModel.Field(j).Kind() == reflect.String {
+					format = format1
+				} else {
+					format = format2
+				}
+
 				sectionValues = fmt.Sprintf(format, sectionValues, valueOfModel.Field(j))
 			}
 		}
@@ -60,15 +87,43 @@ func (insertQueryBuilder *InsertQueryBuilder) getSQlValuesToInsert() string {
 	return theSql
 }
 
+func (insertQueryBuilder *InsertQueryBuilder) getSqlColumnNamesToInsert() string {
+	typeOfRef := reflect.ValueOf(insertQueryBuilder.referenceModel).Elem()
+
+	sectionColumn := "("
+	for i := 0; i < typeOfRef.NumField(); i++ {
+		if i == 0 {
+			continue
+		}
+		var format string
+
+		if i == 1 {
+			format = "%v%v"
+		} else {
+			format = "%v, %v"
+		}
+
+		if !isRelationshipField(typeOfRef.Field(i)) {
+			sectionColumn = fmt.Sprintf(format, sectionColumn, typeOfRef.Type().Field(i).Name)
+		}
+	}
+	sectionColumn += ")"
+
+	return sectionColumn
+}
+
 func (insertQueryBuilder *InsertQueryBuilder) ConstructSql() string {
 	if len(insertQueryBuilder.modelValues) == 0 {
 		return ""
 	}
 
-	var theSql = fmt.Sprintf("INSERT INTO %v VALUES",
-		getTableName(getModelName(insertQueryBuilder.referenceModel)))
+	var theSql = fmt.Sprintf("INSERT INTO %v %v VALUES",
+		getTableName(getModelName(insertQueryBuilder.referenceModel)),
+		insertQueryBuilder.getSqlColumnNamesToInsert())
 
-	return fmt.Sprintf("%v %v;", theSql, insertQueryBuilder.getSQlValuesToInsert())
+	return fmt.Sprintf("%v %v;",
+		theSql,
+		insertQueryBuilder.getSQlValuesToInsert())
 }
 
 func (insertQueryBuilder *InsertQueryBuilder) SetReferenceModel(model interface{}) *InsertQueryBuilder {
