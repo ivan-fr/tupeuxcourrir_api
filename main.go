@@ -12,17 +12,22 @@ func main() {
 
 	ref := models.NewUser()
 	u := models.User{}
+	t := models.User{}
 	p := make([]interface{}, 0)
 	u.Pseudo = "ivan"
-	u.Email = "troplolollo"
+	u.Email = "tropjpopijlololl"
 	u.EncryptedPassword = "popop"
 	u.Salt = "ja"
 	u.FirstName = "popo"
 	u.LastName = "bajon"
-	p = append(p, &u)
+	t.Pseudo = "ivan"
+	t.Email = "pokpopk"
+	t.EncryptedPassword = "popop"
+	t.Salt = "ja"
+	t.FirstName = "popo"
+	t.LastName = "bajon"
+	p = append(p, &u, &t)
 
 	iQueryBuilder := orm.NewInsertQueryBuilder(ref, p)
-	result, err := iQueryBuilder.ApplyInsert()
-	id, err2 := result.LastInsertId()
-	fmt.Println(id, err, err2)
+	fmt.Println(iQueryBuilder.ApplyInsert())
 }
