@@ -33,7 +33,7 @@ func (queryBuilder *SelectQueryBuilder) addPrefixToSections(prefix string) {
 	}
 }
 
-func (queryBuilder *SelectQueryBuilder) ConstructSql() string {
+func (queryBuilder *SelectQueryBuilder) constructSql() string {
 	queryBuilder.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(queryBuilder.model)))
 
 	queryBuilder.addPrefixToSections(" ")
@@ -171,7 +171,7 @@ func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, e
 	defer queryBuilder.Clean()
 
 	var modelsMatrix [][]ModelsOrderedToScan
-	rows, err := connection.Db.Query(queryBuilder.ConstructSql())
+	rows, err := connection.Db.Query(queryBuilder.constructSql())
 
 	if err == nil {
 		var modelsList []ModelsOrderedToScan
@@ -192,7 +192,7 @@ func (queryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, 
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clean()
 
-	row := connection.Db.QueryRow(queryBuilder.ConstructSql())
+	row := connection.Db.QueryRow(queryBuilder.constructSql())
 	modelsList, err := queryBuilder.hydrate(row.Scan)
 
 	return modelsList, err

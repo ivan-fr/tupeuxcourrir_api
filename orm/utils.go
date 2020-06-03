@@ -130,7 +130,7 @@ func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
 }
 
 func isRelationshipField(field reflect.Value) bool {
-	_, ok := field.Interface().(*ManyToOneRelationShip)
+	_, ok := field.Interface().(*ManyToManyRelationShip)
 	_, ok1 := field.Interface().(*OneToManyRelationShip)
 	_, ok2 := field.Interface().(*ManyToOneRelationShip)
 

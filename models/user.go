@@ -29,7 +29,6 @@ type User struct {
 func NewUser() *User {
 	usersRoles := NewUsersRole()
 	thread := NewThread()
-
 	user := User{}
 	user.Roles = &orm.ManyToManyRelationShip{Target: &Role{}, IntermediateTarget: usersRoles}
 	user.InitiatedThread = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "InitiatorThread"}
