@@ -13,44 +13,41 @@ type InsertQueryBuilder struct {
 	modelValues    []interface{}
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) ConstructSql() string {
-	if len(insertQueryBuilder.modelValues) == 0 {
-		return ""
-	}
+func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
+	valueOfModel := reflect.ValueOf(modelValue).Elem()
 
-	var theSql = fmt.Sprintf("INSERT INTO %v VALUES",
-		getTableName(getModelName(insertQueryBuilder.referenceModel)))
+	sectionValues := "(NULL"
+	for j := 0; j < valueOfModel.NumField(); j++ {
+		if j == 0 {
+			continue
+		}
 
-	var sectionValues string
-	var valueOfModel reflect.Value
+		var format string
+		var fieldTime, okTime = valueOfModel.Field(j).Interface().(time.Time)
 
-	for i, modelValue := range insertQueryBuilder.modelValues {
-		valueOfModel = reflect.ValueOf(modelValue).Elem()
+		if valueOfModel.Field(j).Kind() == reflect.String || okTime {
+			format = "%v, '%v'"
+		} else {
+			format = "%v, %v"
+		}
 
-		sectionValues = "(NULL"
-		for j := 0; j < valueOfModel.NumField(); j++ {
-			if j == 0 {
-				continue
-			}
-
-			var format string
-			var fieldTime, okTime = valueOfModel.Field(j).Interface().(time.Time)
-
-			if valueOfModel.Field(j).Kind() == reflect.String || okTime {
-				format = "%v, '%v'"
+		if !isRelationshipField(valueOfModel.Field(j)) {
+			if okTime {
+				sectionValues = fmt.Sprintf(format, sectionValues, fieldTime.String())
 			} else {
-				format = "%v, %v"
-			}
-
-			if !isRelationshipField(valueOfModel.Field(j)) {
-				if okTime {
-					sectionValues = fmt.Sprintf(format, sectionValues, fieldTime.String())
-				} else {
-					sectionValues = fmt.Sprintf(format, sectionValues, valueOfModel.Field(j))
-				}
+				sectionValues = fmt.Sprintf(format, sectionValues, valueOfModel.Field(j))
 			}
 		}
-		sectionValues += ")"
+	}
+	return sectionValues + ")"
+}
+
+func (insertQueryBuilder *InsertQueryBuilder) getSQlValuesToInsert() string {
+	var theSql string
+
+	for i, modelValue := range insertQueryBuilder.modelValues {
+
+		sectionValues := insertQueryBuilder.getSQLSectionValuesToInsert(modelValue)
 
 		switch {
 		case 0 == i:
@@ -60,7 +57,18 @@ func (insertQueryBuilder *InsertQueryBuilder) ConstructSql() string {
 		}
 	}
 
-	return theSql + ";"
+	return theSql
+}
+
+func (insertQueryBuilder *InsertQueryBuilder) ConstructSql() string {
+	if len(insertQueryBuilder.modelValues) == 0 {
+		return ""
+	}
+
+	var theSql = fmt.Sprintf("INSERT INTO %v VALUES",
+		getTableName(getModelName(insertQueryBuilder.referenceModel)))
+
+	return fmt.Sprintf("%v %v;", theSql, insertQueryBuilder.getSQlValuesToInsert())
 }
 
 func (insertQueryBuilder *InsertQueryBuilder) SetReferenceModel(model interface{}) *InsertQueryBuilder {

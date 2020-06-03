@@ -22,5 +22,5 @@ func main() {
 	p = append(p, &u)
 
 	iQueryBuilder := orm.NewInsertQueryBuilder(ref, p)
-	fmt.Println(iQueryBuilder.ApplyInsert())
+	fmt.Println(iQueryBuilder.ConstructSql())
 }
