@@ -15,7 +15,7 @@ var singletonConnector *Connection
 
 func GetConnectionFromDB() *Connection {
 	if singletonConnector == nil {
-		db, err := sql.Open("mysql", "root:Koko32145.3@tcp(localhost)/tupeuxcourrir_bdd")
+		db, err := sql.Open("mysql", "root:Koko32145.3@/tupeuxcourrir_bdd")
 
 		if err != nil {
 			panic(err)

@@ -10,12 +10,9 @@ import (
 func main() {
 	defer db.DeferClose()
 
-	var u = models.NewUser()
-	sQueryBuilder := orm.NewSelectQueryBuilder(u).
-		FindBy(map[string]string{"id": "lol", "koko": "popo", "giro": "pipo"}).
+	sQueryBuilder := orm.NewSelectQueryBuilder(models.NewUser()).
 		Consider("InitiatedThread").
 		Consider("ReceivedThread").
-		Consider("Roles").
-		OrderBy(map[string]string{"bibi": "", "lolo": "DESC", "palopalo": "DESC"})
-	fmt.Println(sQueryBuilder.ConstructSql())
+		Consider("Roles")
+	fmt.Println(sQueryBuilder.ApplyQueryRow())
 }

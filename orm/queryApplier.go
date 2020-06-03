@@ -15,17 +15,15 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 		{getModelName(queryApplier.model), newModel(queryApplier.model)},
 	}
 
-	var considerateModel interface{} = newModels[0].Model
 	var addrs []interface{}
-	addrFields, err := getAddrFieldsToScan(&considerateModel)
+	addrFields, err := getAddrFieldsToScan(newModels[0].Model)
 
 	if err == nil {
 		for i, relationshipTarget := range queryApplier.relationshipTargetOrder {
 			newModels = append(newModels,
 				ModelsOrderedToScan{getModelName(relationshipTarget),
 					newModel(relationshipTarget)})
-			considerateModel = newModels[i+1].Model
-			addrs, err = getAddrFieldsToScan(&considerateModel)
+			addrs, err = getAddrFieldsToScan(newModels[i+1].Model)
 			addrFields = append(addrFields, addrs...)
 
 			if err != nil {

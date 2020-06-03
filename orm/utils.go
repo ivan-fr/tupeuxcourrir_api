@@ -100,12 +100,12 @@ func getAssociatedColumnFromReverse(target interface{}, targetStructFields refle
 }
 
 func newModel(model interface{}) interface{} {
-	modelValue := reflect.ValueOf(model)
+	modelValue := reflect.TypeOf(model)
 	if modelValue.Kind() == reflect.Ptr {
-		modelValue = reflect.Indirect(modelValue)
+		modelValue = modelValue.Elem()
 	}
 
-	return reflect.New(modelValue.Type()).Interface()
+	return reflect.New(modelValue).Interface()
 }
 
 func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
