@@ -6,14 +6,14 @@ import (
 )
 
 type Message struct {
-	IdMessage int `orm:"PK;SelfCOLUMN:idMessage"`
-	Message   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserId    int
-	ThreadId  int
-	User      *orm.ManyToOneRelationShip
-	Thread    *orm.ManyToOneRelationShip
+	IdMessage      int `orm:"PK"`
+	Message        string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	UserIdUser     int
+	ThreadIdThread int
+	User           *orm.ManyToOneRelationShip
+	Thread         *orm.ManyToOneRelationShip
 }
 
 func NewMessage() *Message {

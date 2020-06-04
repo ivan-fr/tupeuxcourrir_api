@@ -3,7 +3,7 @@ package models
 import "tupeuxcourrir_api/orm"
 
 type UsersRole struct {
-	IdUsersRoles int `orm:"PK;SelfCOLUMN:idUsersRoles"`
+	IdUsersRoles int `orm:"PK"`
 	UsersIdUser  int
 	RolesIdRole  int
 	User         *orm.ManyToOneRelationShip

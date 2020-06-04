@@ -50,7 +50,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTO(fieldInterface interface{})
 		getTableName(getModelName(selectQueryBuilder.model)),
 		relationship.AssociateColumn,
 		selectQueryBuilder.getAlias(getTableName(target.Elem().Type().Name())),
-		getPKFieldSelfCOLUMNTagFromModel(target.Interface()))
+		getPKFieldNameFromModel(target.Interface()))
 	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
 }
 
@@ -71,7 +71,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addOTM(fieldInterface interface{})
 		getTableName(target.Type().Name()),
 		selectQueryBuilder.getAlias(getTableName(target.Type().Name())),
 		getTableName(getModelName(selectQueryBuilder.model)),
-		getPKFieldSelfCOLUMNTagFromModel(selectQueryBuilder.model),
+		getPKFieldNameFromModel(selectQueryBuilder.model),
 		selectQueryBuilder.getAlias(getTableName(target.Type().Name())),
 		targetAssociatedColumn)
 	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
@@ -86,7 +86,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 		getTableName(intermediateTarget.Type().Name()),
 		selectQueryBuilder.getAlias(getTableName(intermediateTarget.Type().Name())),
 		getTableName(getModelName(selectQueryBuilder.model)),
-		getPKFieldSelfCOLUMNTagFromModel(selectQueryBuilder.model),
+		getPKFieldNameFromModel(selectQueryBuilder.model),
 		selectQueryBuilder.getAlias(getTableName(intermediateTarget.Type().Name())),
 		getAssociatedColumnFromReverse(selectQueryBuilder.model, intermediateTarget),
 
@@ -95,7 +95,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 		selectQueryBuilder.getAlias(getTableName(intermediateTarget.Type().Name())),
 		getAssociatedColumnFromReverse(target.Interface(), intermediateTarget),
 		selectQueryBuilder.getAlias(getTableName(target.Elem().Type().Name())),
-		getPKFieldSelfCOLUMNTagFromModel(target.Interface()))
+		getPKFieldNameFromModel(target.Interface()))
 	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
 }
 

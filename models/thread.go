@@ -6,7 +6,7 @@ import (
 )
 
 type Thread struct {
-	IdThread              int `orm:"PK;SelfCOLUMN:idThread"`
+	IdThread              int `orm:"PK"`
 	CreatedAt             time.Time
 	ActiveOnThread        int
 	Reciprocal            bool

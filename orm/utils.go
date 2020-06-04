@@ -77,7 +77,7 @@ func putIntermediateString(baseSql *string,
 	return newSql
 }
 
-func getPKFieldSelfCOLUMNTagFromModel(model interface{}) string {
+func getPKFieldNameFromModel(model interface{}) string {
 	reflectModel := reflect.TypeOf(model).Elem()
 	var field reflect.StructField
 
@@ -97,20 +97,12 @@ func getPKFieldSelfCOLUMNTagFromModel(model interface{}) string {
 			}
 
 			if isPk {
-				break
+				return field.Name
 			}
 		}
 	}
 
-	if isPk {
-		for _, vOfData := range ormTags {
-			if strings.Contains(vOfData, "SelfCOLUMN") {
-				return strings.Split(vOfData, ":")[1]
-			}
-		}
-	}
-
-	panic("no self column in pk model tag")
+	panic("no pk model tag")
 }
 
 func getAssociatedColumnFromReverse(target interface{}, targetStructFields reflect.Value) string {

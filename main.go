@@ -10,7 +10,7 @@ import (
 func main() {
 	defer db.DeferClose()
 
-	uQueryBuilder := orm.NewUpdateQueryBuilder(models.NewUser())
+	uQueryBuilder := orm.NewUpdateQueryBuilder(models.NewMessage())
 	uQueryBuilder.Where(map[string]interface{}{"IdUser": 9})
 
 	fmt.Println(uQueryBuilder.ConstructSql())
