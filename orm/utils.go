@@ -26,14 +26,15 @@ func getTableName(name string) string {
 func putIntermediateString(baseSql *string,
 	intermediateStringMap string,
 	mapIsSetter bool,
-	theMap map[string]string) string {
+	theMap map[string]interface{}) string {
 
-	var newSql string = *baseSql
+	var newSql = *baseSql
 	var format string
 	var formatAlternative string
 
 	if mapIsSetter {
 		format = "%v %v = '%v'"
+		formatAlternative = "%v %v = %v"
 	} else {
 		format = "%v %v %v"
 		formatAlternative = "%v %v"
@@ -41,13 +42,33 @@ func putIntermediateString(baseSql *string,
 
 	var i int
 	for key, value := range theMap {
-		if !mapIsSetter && formatAlternative != "" && value == "" {
-			newSql = fmt.Sprintf(formatAlternative, newSql, key)
-		} else {
-			newSql = fmt.Sprintf(format, newSql, key, value)
+		switch {
+		case mapIsSetter:
+			switch value.(type) {
+			case string:
+				if value.(string) == "Now()" {
+					newSql = fmt.Sprintf(formatAlternative, newSql, key, "Now()")
+				} else {
+					newSql = fmt.Sprintf(format, newSql, key, value.(string))
+				}
+			case int:
+				newSql = fmt.Sprintf(formatAlternative, newSql, key, value.(int))
+			case bool:
+				newSql = fmt.Sprintf(formatAlternative, newSql, key, value.(bool))
+			case nil:
+				newSql = fmt.Sprintf(formatAlternative, newSql, key, "NULL")
+			default:
+				panic("undefined type")
+			}
+		default:
+			if value == "" {
+				newSql = fmt.Sprintf(formatAlternative, newSql, key)
+			} else {
+				newSql = fmt.Sprintf(format, newSql, key, value)
+			}
 		}
 
-		if 0 <= i && i <= (len(theMap)-2) {
+		if 0 <= i && i <= (len(theMap)-2) && (0 != len(theMap)-1) {
 			newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
 		}
 		i++

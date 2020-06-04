@@ -19,7 +19,7 @@ func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 	sqlConstruct := "SET"
 
 	valueOfRef := reflect.ValueOf(updateQueryBuilder.referenceModel).Elem()
-	var mapFilter = make(map[string]string)
+	var mapFilter = make(map[string]interface{})
 
 	for i := 0; i < valueOfRef.NumField(); i++ {
 		if i == 0 {
@@ -33,35 +33,24 @@ func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 				case strings.Contains(valueOfRef.Type().Field(i).Name, "UpdatedAt"):
 					mapFilter[valueOfRef.Type().Field(i).Name] = "Now()"
 				case timeField.IsZero():
-					mapFilter[valueOfRef.Type().Field(i).Name] = "NULL"
+					mapFilter[valueOfRef.Type().Field(i).Name] = nil
 				default:
 					mapFilter[valueOfRef.Type().Field(i).Name] = timeField.Format("YYYY-MM-DD HH:MM:SS")
 				}
 			} else {
-				mapFilter[valueOfRef.Type().Field(i).Name] = valueOfRef.Field(i).String()
+				mapFilter[valueOfRef.Type().Field(i).Name] = valueOfRef.Field(i).Interface()
 			}
 		}
 	}
 
 	updateQueryBuilder.SectionSet = putIntermediateString(
 		&sqlConstruct,
-		" and",
+		",",
 		true,
 		mapFilter)
 }
 
-func (updateQueryBuilder *UpdateQueryBuilder) Where(mapFilter map[string]string) *UpdateQueryBuilder {
-	sqlConstruct := "WHERE"
-
-	updateQueryBuilder.SectionWhere = putIntermediateString(&sqlConstruct,
-		" and",
-		true,
-		mapFilter)
-
-	return updateQueryBuilder
-}
-
-func (updateQueryBuilder *UpdateQueryBuilder) constructSql() string {
+func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
 	var theSql = fmt.Sprintf("UPDATE %v",
 		getTableName(getModelName(updateQueryBuilder.referenceModel)))
 
@@ -81,15 +70,32 @@ func (updateQueryBuilder *UpdateQueryBuilder) constructSql() string {
 		updateQueryBuilder.SectionWhere)
 }
 
+func (updateQueryBuilder *UpdateQueryBuilder) Where(mapFilter map[string]interface{}) *UpdateQueryBuilder {
+	sqlConstruct := "WHERE"
+
+	updateQueryBuilder.SectionWhere = putIntermediateString(&sqlConstruct,
+		" and",
+		true,
+		mapFilter)
+
+	return updateQueryBuilder
+}
+
 func (updateQueryBuilder *UpdateQueryBuilder) SetReferenceModel(model interface{}) *UpdateQueryBuilder {
+	updateQueryBuilder.Clean()
 	updateQueryBuilder.referenceModel = nil
 	updateQueryBuilder.referenceModel = model
 	return updateQueryBuilder
 }
 
+func (updateQueryBuilder *UpdateQueryBuilder) Clean() {
+	updateQueryBuilder.SectionWhere = ""
+	updateQueryBuilder.SectionSet = ""
+}
+
 func (updateQueryBuilder *UpdateQueryBuilder) ApplyUpdate() (sql.Result, error) {
 	connection := db.GetConnectionFromDB()
-	return connection.Db.Exec(updateQueryBuilder.constructSql())
+	return connection.Db.Exec(updateQueryBuilder.ConstructSql())
 }
 
 func NewUpdateQueryBuilder(model interface{}) *UpdateQueryBuilder {

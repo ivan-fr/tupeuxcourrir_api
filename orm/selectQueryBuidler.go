@@ -99,7 +99,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]string) *SelectQueryBuilder {
+func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
 	sqlConstruct := "ORDER BY"
 
 	selectQueryBuilder.SectionOrder = putIntermediateString(&sqlConstruct,
@@ -115,7 +115,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Limit(limit string) *SelectQueryBu
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]string) *SelectQueryBuilder {
+func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
 	sqlConstruct := "WHERE"
 
 	selectQueryBuilder.SectionWhere = putIntermediateString(&sqlConstruct,
