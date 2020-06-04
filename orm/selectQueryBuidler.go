@@ -172,15 +172,15 @@ func (queryBuilder *SelectQueryBuilder) Consider(fieldName string) *SelectQueryB
 	return queryBuilder
 }
 
-func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, error) {
+func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clean()
 
-	var modelsMatrix [][]ModelsOrderedToScan
+	var modelsMatrix [][]*ModelsScanned
 	rows, err := connection.Db.Query(queryBuilder.constructSql())
 
 	if err == nil {
-		var modelsList []ModelsOrderedToScan
+		var modelsList []*ModelsScanned
 		for rows.Next() {
 			modelsList, err = queryBuilder.hydrate(rows.Scan)
 
@@ -194,7 +194,7 @@ func (queryBuilder *SelectQueryBuilder) ApplyQuery() ([][]ModelsOrderedToScan, e
 	return modelsMatrix, err
 }
 
-func (queryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]ModelsOrderedToScan, error) {
+func (queryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
 	connection := db.GetConnectionFromDB()
 	defer queryBuilder.Clean()
 

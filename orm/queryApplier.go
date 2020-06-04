@@ -1,6 +1,6 @@
 package orm
 
-type ModelsOrderedToScan struct {
+type ModelsScanned struct {
 	ModelName string
 	Model     interface{}
 }
@@ -10,20 +10,20 @@ type QueryApplier struct {
 	relationshipTargetOrder []interface{}
 }
 
-func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) ([]ModelsOrderedToScan, error) {
-	var newModels = []ModelsOrderedToScan{
+func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) ([]*ModelsScanned, error) {
+	var listModels = []*ModelsScanned{
 		{getModelName(queryApplier.model), newModel(queryApplier.model)},
 	}
 
 	var addrs []interface{}
-	addrFields, err := getAddrFieldsToScan(newModels[0].Model)
+	addrFields, err := getAddrFieldsToScan(listModels[0].Model)
 
 	if err == nil {
 		for i, relationshipTarget := range queryApplier.relationshipTargetOrder {
-			newModels = append(newModels,
-				ModelsOrderedToScan{getModelName(relationshipTarget),
+			listModels = append(listModels,
+				&ModelsScanned{getModelName(relationshipTarget),
 					newModel(relationshipTarget)})
-			addrs, err = getAddrFieldsToScan(newModels[i+1].Model)
+			addrs, err = getAddrFieldsToScan(listModels[i+1].Model)
 			addrFields = append(addrFields, addrs...)
 
 			if err != nil {
@@ -38,7 +38,7 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 		}
 	}
 
-	return newModels, err
+	return listModels, err
 }
 
 func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool {
