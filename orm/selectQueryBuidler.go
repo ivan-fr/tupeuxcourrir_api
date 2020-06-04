@@ -138,6 +138,12 @@ func (queryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]string) *Sel
 	return queryBuilder
 }
 
+func (queryBuilder *SelectQueryBuilder) SetModel(model interface{}) {
+	queryBuilder.Clean()
+	queryBuilder.model = nil
+	queryBuilder.model = model
+}
+
 func (queryBuilder *SelectQueryBuilder) Clean() {
 	queryBuilder.SectionOffset = ""
 	queryBuilder.SectionLimit = ""

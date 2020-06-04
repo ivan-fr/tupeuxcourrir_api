@@ -112,7 +112,7 @@ func (insertQueryBuilder *InsertQueryBuilder) getSqlColumnNamesToInsert() string
 	return sectionColumn
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) ConstructSql() string {
+func (insertQueryBuilder *InsertQueryBuilder) constructSql() string {
 	if len(insertQueryBuilder.modelValues) == 0 {
 		return ""
 	}
@@ -140,7 +140,7 @@ func (insertQueryBuilder *InsertQueryBuilder) Clean() {
 func (insertQueryBuilder *InsertQueryBuilder) ApplyInsert() (sql.Result, error) {
 	connection := db.GetConnectionFromDB()
 	defer insertQueryBuilder.Clean()
-	return connection.Db.Exec(insertQueryBuilder.ConstructSql())
+	return connection.Db.Exec(insertQueryBuilder.constructSql())
 }
 
 func NewInsertQueryBuilder(model interface{}, modelsValues []interface{}) *InsertQueryBuilder {

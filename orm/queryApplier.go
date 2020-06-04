@@ -65,12 +65,6 @@ func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool
 	return result
 }
 
-func (queryApplier *QueryApplier) SetModel(model interface{}) {
-	queryApplier.Clean()
-	queryApplier.model = nil
-	queryApplier.model = model
-}
-
 func (queryApplier *QueryApplier) Clean() {
 	queryApplier.relationshipTargetOrder = nil
 }
