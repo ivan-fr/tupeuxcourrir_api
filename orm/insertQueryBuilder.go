@@ -3,11 +3,11 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 	"tupeuxcourrir_api/db"
 )
-import "reflect"
 
 type InsertQueryBuilder struct {
 	referenceModel interface{}

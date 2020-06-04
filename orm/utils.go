@@ -7,6 +7,18 @@ import (
 	"strings"
 )
 
+func addPrefixToSections(queryBuilder interface{}, prefix string) {
+	reflectQueryBuilder := reflect.ValueOf(queryBuilder).Elem()
+	var field reflect.Value
+
+	for i := 0; i < reflectQueryBuilder.NumField(); i++ {
+		field = reflectQueryBuilder.Field(i)
+		if field.Kind() == reflect.String && fmt.Sprintf("%v", field) != "" {
+			field.SetString(fmt.Sprintf("%v%v", prefix, field))
+		}
+	}
+}
+
 func getTableName(name string) string {
 	return strings.ToLower(fmt.Sprintf("%vs", name))
 }
@@ -16,7 +28,7 @@ func putIntermediateString(baseSql *string,
 	mapIsSetter bool,
 	theMap map[string]string) string {
 
-	var newSql = *baseSql
+	var newSql string = *baseSql
 	var format string
 	var formatAlternative string
 
