@@ -22,7 +22,6 @@ func GetConnectionFromDB() *Connection {
 		}
 
 		singletonConnector = &Connection{db, err}
-		return &Connection{db, err}
 	}
 
 	return singletonConnector

@@ -17,6 +17,8 @@ type SelectQueryBuilder struct {
 	SectionJoin   []string
 }
 
+var singletonSQueryBuilder *SelectQueryBuilder
+
 func (selectQueryBuilder *SelectQueryBuilder) getAlias(tableName string) string {
 	return fmt.Sprintf("%v%v", tableName[0:2], len(selectQueryBuilder.relationshipTargetOrder))
 }
@@ -192,6 +194,11 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned,
 	return modelsList, err
 }
 
-func NewSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
-	return &SelectQueryBuilder{QueryApplier: QueryApplier{model: model}}
+func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
+	if singletonIQueryBuilder == nil {
+		singletonSQueryBuilder = &SelectQueryBuilder{}
+	}
+
+	singletonSQueryBuilder.SetModel(model)
+	return singletonSQueryBuilder
 }

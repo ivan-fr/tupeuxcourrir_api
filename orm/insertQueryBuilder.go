@@ -14,6 +14,8 @@ type InsertQueryBuilder struct {
 	modelValues    []interface{}
 }
 
+var singletonIQueryBuilder *InsertQueryBuilder
+
 func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
 	valueOfModel := reflect.ValueOf(modelValue).Elem()
 	var format1, format2, format string
@@ -143,6 +145,12 @@ func (insertQueryBuilder *InsertQueryBuilder) ApplyInsert() (sql.Result, error) 
 	return connection.Db.Exec(insertQueryBuilder.constructSql())
 }
 
-func NewInsertQueryBuilder(model interface{}, modelsValues []interface{}) *InsertQueryBuilder {
-	return &InsertQueryBuilder{referenceModel: model, modelValues: modelsValues}
+func GetInsertQueryBuilder(model interface{}, modelsValues []interface{}) *InsertQueryBuilder {
+	if singletonIQueryBuilder == nil {
+		singletonIQueryBuilder = &InsertQueryBuilder{}
+	}
+
+	singletonIQueryBuilder.SetReferenceModel(model)
+	singletonIQueryBuilder.modelValues = modelsValues
+	return singletonIQueryBuilder
 }

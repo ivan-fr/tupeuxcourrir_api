@@ -15,6 +15,8 @@ type UpdateQueryBuilder struct {
 	SectionSet     string
 }
 
+var singletonUQueryBuilder *UpdateQueryBuilder
+
 func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 	sqlConstruct := "SET"
 
@@ -98,6 +100,11 @@ func (updateQueryBuilder *UpdateQueryBuilder) ApplyUpdate() (sql.Result, error) 
 	return connection.Db.Exec(updateQueryBuilder.ConstructSql())
 }
 
-func NewUpdateQueryBuilder(model interface{}) *UpdateQueryBuilder {
-	return &UpdateQueryBuilder{referenceModel: model}
+func GetUpdateQueryBuilder(model interface{}) *UpdateQueryBuilder {
+	if singletonUQueryBuilder == nil {
+		singletonUQueryBuilder = &UpdateQueryBuilder{}
+	}
+
+	singletonUQueryBuilder.SetReferenceModel(model)
+	return singletonUQueryBuilder
 }
