@@ -134,6 +134,11 @@ func (selectQueryBuilder *SelectQueryBuilder) Limit(limit string) *SelectQueryBu
 	return selectQueryBuilder
 }
 
+func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQueryBuilder {
+	selectQueryBuilder.SectionOffset = fmt.Sprintf("OFFSET %v", offset)
+	return selectQueryBuilder
+}
+
 func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
 	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
 		" and",
@@ -176,6 +181,19 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 			selectQueryBuilder.addMTM(fieldInterface)
 		}
 	}
+
+	return selectQueryBuilder
+}
+
+func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
+	var mapColumns = make(map[string]interface{})
+
+	for _, column := range columns {
+		mapColumns[column] = ""
+	}
+
+	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
+		putIntermediateString(",", "space", mapColumns))
 
 	return selectQueryBuilder
 }
