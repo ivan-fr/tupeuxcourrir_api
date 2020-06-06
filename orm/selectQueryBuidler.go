@@ -8,13 +8,14 @@ import (
 
 type SelectQueryBuilder struct {
 	QueryApplier
+	SectionSelect string
 	SectionWhere  string
 	SectionOrder  string
-	SectionSelect string
 	SectionFrom   string
 	SectionLimit  string
 	SectionOffset string
 	SectionJoin   []string
+	root          bool
 }
 
 var singletonSQueryBuilder *SelectQueryBuilder
@@ -24,10 +25,14 @@ func (selectQueryBuilder *SelectQueryBuilder) getAlias(tableName string) string 
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) constructSql() string {
+
+	if selectQueryBuilder.SectionSelect == "" {
+		selectQueryBuilder.SectionSelect = "SELECT *"
+	}
+
 	selectQueryBuilder.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(selectQueryBuilder.model)))
 
-	addPrefixToSections(selectQueryBuilder, " ")
-	selectQueryBuilder.SectionSelect = "SELECT *"
+	addPrefixToSections(selectQueryBuilder, " ", 1)
 
 	var joins string
 	for _, join := range selectQueryBuilder.SectionJoin {
@@ -102,12 +107,10 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
-	sqlConstruct := "ORDER BY"
-
-	selectQueryBuilder.SectionOrder = putIntermediateString(&sqlConstruct,
+	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", putIntermediateString(
 		",",
-		false,
-		orderFilter)
+		"space",
+		orderFilter))
 
 	return selectQueryBuilder
 }
@@ -118,12 +121,10 @@ func (selectQueryBuilder *SelectQueryBuilder) Limit(limit string) *SelectQueryBu
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
-	sqlConstruct := "WHERE"
-
-	selectQueryBuilder.SectionWhere = putIntermediateString(&sqlConstruct,
+	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
 		" and",
-		true,
-		mapFilter)
+		"setter",
+		mapFilter))
 
 	return selectQueryBuilder
 }
@@ -162,6 +163,27 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 	return selectQueryBuilder
 }
 
+func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRowAggregate(aggregateMap map[string]interface{}) ([]int, error) {
+	connection := db.GetConnectionFromDB()
+	defer selectQueryBuilder.Clean()
+
+	var aggregateResult = make([]int, len(aggregateMap))
+
+	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v",
+		putIntermediateString(",", "aggregate", aggregateMap))
+
+	row := connection.Db.QueryRow(selectQueryBuilder.constructSql())
+
+	var addrAggregateResult []interface{}
+	for i := 0; i < len(aggregateResult); i++ {
+		addrAggregateResult = append(addrAggregateResult, &aggregateResult[i])
+	}
+
+	err := row.Scan(addrAggregateResult...)
+
+	return aggregateResult, err
+}
+
 func (selectQueryBuilder *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
 	connection := db.GetConnectionFromDB()
 	defer selectQueryBuilder.Clean()
@@ -194,9 +216,16 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned,
 	return modelsList, err
 }
 
+func GetSubSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
+	subSQueryBuilder := &SelectQueryBuilder{root: false}
+	subSQueryBuilder.SetModel(model)
+	return subSQueryBuilder
+}
+
 func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
 	if singletonIQueryBuilder == nil {
 		singletonSQueryBuilder = &SelectQueryBuilder{}
+		singletonSQueryBuilder.root = true
 	}
 
 	singletonSQueryBuilder.SetModel(model)

@@ -18,15 +18,10 @@ type UpdateQueryBuilder struct {
 var singletonUQueryBuilder *UpdateQueryBuilder
 
 func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
-	sqlConstruct := "SET"
-
 	valueOfRef := reflect.ValueOf(updateQueryBuilder.referenceModel).Elem()
 	var mapFilter = make(map[string]interface{})
 
-	for i := 0; i < valueOfRef.NumField(); i++ {
-		if i == 0 {
-			continue
-		}
+	for i := 1; i < valueOfRef.NumField(); i++ {
 
 		if !isRelationshipField(valueOfRef.Field(i)) {
 			timeField, okTime := valueOfRef.Field(i).Interface().(time.Time)
@@ -45,11 +40,10 @@ func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 		}
 	}
 
-	updateQueryBuilder.SectionSet = putIntermediateString(
-		&sqlConstruct,
+	updateQueryBuilder.SectionSet = fmt.Sprintf("SET %v", putIntermediateString(
 		",",
-		true,
-		mapFilter)
+		"setter",
+		mapFilter))
 }
 
 func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
@@ -64,7 +58,7 @@ func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
 		updateQueryBuilder.getSetSectionFromRef()
 	}
 
-	addPrefixToSections(updateQueryBuilder, " ")
+	addPrefixToSections(updateQueryBuilder, " ", 0)
 
 	return fmt.Sprintf("%v%v%v;",
 		theSql,
@@ -73,12 +67,10 @@ func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
 }
 
 func (updateQueryBuilder *UpdateQueryBuilder) Where(mapFilter map[string]interface{}) *UpdateQueryBuilder {
-	sqlConstruct := "WHERE"
-
-	updateQueryBuilder.SectionWhere = putIntermediateString(&sqlConstruct,
+	updateQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
 		" and",
-		true,
-		mapFilter)
+		"setter",
+		mapFilter))
 
 	return updateQueryBuilder
 }

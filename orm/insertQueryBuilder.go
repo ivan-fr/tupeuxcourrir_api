@@ -21,11 +21,7 @@ func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelV
 	var format1, format2, format string
 
 	sectionValues := "("
-	for j := 0; j < valueOfModel.NumField(); j++ {
-		if j == 0 {
-			continue
-		}
-
+	for j := 1; j < valueOfModel.NumField(); j++ {
 		format1 = "%v"
 		if j == 1 {
 			format1 += "'%v'"
@@ -93,10 +89,7 @@ func (insertQueryBuilder *InsertQueryBuilder) getSqlColumnNamesToInsert() string
 	typeOfRef := reflect.ValueOf(insertQueryBuilder.referenceModel).Elem()
 
 	sectionColumn := "("
-	for i := 0; i < typeOfRef.NumField(); i++ {
-		if i == 0 {
-			continue
-		}
+	for i := 1; i < typeOfRef.NumField(); i++ {
 		var format string
 
 		if i == 1 {

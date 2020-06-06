@@ -21,7 +21,7 @@ func (deleteQueryBuilder *DeleteQueryBuilder) ConstructSql() string {
 		panic("no where section")
 	}
 
-	addPrefixToSections(deleteQueryBuilder, " ")
+	addPrefixToSections(deleteQueryBuilder, " ", 0)
 
 	return fmt.Sprintf("%v%v;",
 		theSql,
@@ -29,12 +29,10 @@ func (deleteQueryBuilder *DeleteQueryBuilder) ConstructSql() string {
 }
 
 func (deleteQueryBuilder *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
-	sqlConstruct := "WHERE"
-
-	deleteQueryBuilder.SectionWhere = putIntermediateString(&sqlConstruct,
+	deleteQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
 		" and",
-		true,
-		mapFilter)
+		"setter",
+		mapFilter))
 
 	return deleteQueryBuilder
 }

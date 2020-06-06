@@ -7,14 +7,18 @@ import (
 	"strings"
 )
 
-func addPrefixToSections(queryBuilder interface{}, prefix string) {
+func addPrefixToSections(queryBuilder interface{}, prefix string, startIndexStringField int) {
 	reflectQueryBuilder := reflect.ValueOf(queryBuilder).Elem()
 	var field reflect.Value
 
+	iStringField := 0
 	for i := 0; i < reflectQueryBuilder.NumField(); i++ {
 		field = reflectQueryBuilder.Field(i)
-		if field.Kind() == reflect.String && fmt.Sprintf("%v", field) != "" {
-			field.SetString(fmt.Sprintf("%v%v", prefix, field))
+		if field.Kind() == reflect.String {
+			if fmt.Sprintf("%v", field) != "" && iStringField >= startIndexStringField {
+				field.SetString(fmt.Sprintf("%v%v", prefix, field))
+			}
+			iStringField++
 		}
 	}
 }
@@ -23,27 +27,35 @@ func getTableName(name string) string {
 	return strings.ToLower(fmt.Sprintf("%vs", name))
 }
 
-func putIntermediateString(baseSql *string,
-	intermediateStringMap string,
-	mapIsSetter bool,
+func putIntermediateString(intermediateStringMap string,
+	mapSetterMode string,
 	theMap map[string]interface{}) string {
 
-	var newSql = *baseSql
+	var newSql string
 	var format string
 	var formatAlternative string
 
-	if mapIsSetter {
-		format = "%v %v = '%v'"
-		formatAlternative = "%v %v = %v"
-	} else {
-		format = "%v %v %v"
-		formatAlternative = "%v %v"
+	switch mapSetterMode {
+	case "setter":
+		format = "%v%v = '%v'"
+		formatAlternative = "%v%v = %v"
+	case "space":
+		format = "%v%v %v"
+		formatAlternative = "%v%v"
+	case "aggregate":
+		format = "%v%v(%v)"
+	default:
+		panic("undefined mode from map")
 	}
 
 	var i int
 	for key, value := range theMap {
-		switch {
-		case mapIsSetter:
+		if i > 0 {
+			newSql = newSql + " "
+		}
+
+		switch mapSetterMode {
+		case "setter":
 			switch value.(type) {
 			case string:
 				if value.(string) == "Now()" {
@@ -60,11 +72,23 @@ func putIntermediateString(baseSql *string,
 			default:
 				panic("undefined type")
 			}
-		default:
-			if value == "" {
-				newSql = fmt.Sprintf(formatAlternative, newSql, key)
-			} else {
-				newSql = fmt.Sprintf(format, newSql, key, value)
+		case "aggregate":
+			switch value.(type) {
+			case string:
+				newSql = fmt.Sprintf(format, newSql, key, value.(string))
+			default:
+				panic("undefined type")
+			}
+		case "space":
+			switch value.(type) {
+			case string:
+				if value == "" {
+					newSql = fmt.Sprintf(formatAlternative, newSql, key)
+				} else {
+					newSql = fmt.Sprintf(format, newSql, key, value)
+				}
+			default:
+				panic("undefined type")
 			}
 		}
 
