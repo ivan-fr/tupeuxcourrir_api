@@ -28,7 +28,6 @@ func (selectQueryBuilder *SelectQueryBuilder) getAlias(tableName string) string 
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) constructSql() string {
-
 	switch {
 	case selectQueryBuilder.SectionSelect == "" && selectQueryBuilder.SectionAggregate == "":
 		selectQueryBuilder.SectionSelect = "SELECT *"
@@ -157,6 +156,8 @@ func (selectQueryBuilder *SelectQueryBuilder) Clean() {
 	selectQueryBuilder.SectionWhere = ""
 	selectQueryBuilder.SectionFrom = ""
 	selectQueryBuilder.SectionSelect = ""
+	selectQueryBuilder.SectionAggregate = ""
+	selectQueryBuilder.SectionGroupBy = ""
 	selectQueryBuilder.rollUp = false
 	selectQueryBuilder.QueryApplier.Clean()
 }
