@@ -29,8 +29,11 @@ func (selectQueryBuilder *SelectQueryBuilder) getAlias(tableName string) string 
 
 func (selectQueryBuilder *SelectQueryBuilder) constructSql() string {
 
-	if selectQueryBuilder.SectionSelect == "" {
+	switch {
+	case selectQueryBuilder.SectionSelect == "" && selectQueryBuilder.SectionAggregate == "":
 		selectQueryBuilder.SectionSelect = "SELECT *"
+	case selectQueryBuilder.SectionAggregate != "" && selectQueryBuilder.SectionSelect == "":
+		selectQueryBuilder.SectionSelect = "SELECT"
 	}
 
 	selectQueryBuilder.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(selectQueryBuilder.model)))
