@@ -8,14 +8,17 @@ import (
 
 type SelectQueryBuilder struct {
 	QueryApplier
-	SectionSelect string
-	SectionWhere  string
-	SectionOrder  string
-	SectionFrom   string
-	SectionLimit  string
-	SectionOffset string
-	SectionJoin   []string
-	root          bool
+	SectionSelect    string
+	SectionAggregate string
+	SectionWhere     string
+	SectionOrder     string
+	SectionFrom      string
+	SectionLimit     string
+	SectionOffset    string
+	SectionJoin      []string
+	SectionGroupBy   string
+	rollUp           bool
+	root             bool
 }
 
 var singletonSQueryBuilder *SelectQueryBuilder
@@ -39,10 +42,19 @@ func (selectQueryBuilder *SelectQueryBuilder) constructSql() string {
 		joins = fmt.Sprintf("%v %v", joins, join)
 	}
 
-	return fmt.Sprintf("%v%v%v%v%v%v%v;", selectQueryBuilder.SectionSelect,
+	var withRollUp string
+	if selectQueryBuilder.rollUp {
+		withRollUp = " WITH ROLLUP"
+	}
+
+	return fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v;",
+		selectQueryBuilder.SectionSelect,
+		selectQueryBuilder.SectionAggregate,
 		selectQueryBuilder.SectionFrom,
 		joins,
 		selectQueryBuilder.SectionWhere,
+		selectQueryBuilder.SectionGroupBy,
+		withRollUp,
 		selectQueryBuilder.SectionOrder,
 		selectQueryBuilder.SectionLimit,
 		selectQueryBuilder.SectionOffset)
@@ -142,6 +154,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Clean() {
 	selectQueryBuilder.SectionWhere = ""
 	selectQueryBuilder.SectionFrom = ""
 	selectQueryBuilder.SectionSelect = ""
+	selectQueryBuilder.rollUp = false
 	selectQueryBuilder.QueryApplier.Clean()
 }
 
@@ -163,28 +176,69 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRowAggregate(aggregateMap map[string]interface{}) ([]int, error) {
-	connection := db.GetConnectionFromDB()
-	defer selectQueryBuilder.Clean()
+func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
+	selectQueryBuilder.columns = columns
 
-	var aggregateResult = make([]int, len(aggregateMap))
+	var mapColumns = make(map[string]interface{})
 
-	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v",
-		putIntermediateString(",", "aggregate", aggregateMap))
-
-	row := connection.Db.QueryRow(selectQueryBuilder.constructSql())
-
-	var addrAggregateResult []interface{}
-	for i := 0; i < len(aggregateResult); i++ {
-		addrAggregateResult = append(addrAggregateResult, &aggregateResult[i])
+	for _, column := range columns {
+		mapColumns[column] = ""
 	}
 
-	err := row.Scan(addrAggregateResult...)
+	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v",
+		putIntermediateString(",", "space", mapColumns))
 
-	return aggregateResult, err
+	return selectQueryBuilder
+}
+
+func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
+	selectQueryBuilder.aggregates = nil
+
+	for key := range aggregateMap {
+		selectQueryBuilder.aggregates = append(selectQueryBuilder.aggregates, key)
+	}
+
+	selectQueryBuilder.SectionAggregate = putIntermediateString(
+		",", "aggregate", aggregateMap)
+
+	return selectQueryBuilder
+}
+
+func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, error) {
+	defer selectQueryBuilder.Clean()
+	connection := db.GetConnectionFromDB()
+	row := connection.Db.QueryRow(selectQueryBuilder.constructSql())
+
+	var columnsResult = make([]interface{}, len(selectQueryBuilder.columns)+len(selectQueryBuilder.aggregates))
+
+	var addrColumnsResult []interface{}
+	for i := 0; i < len(columnsResult); i++ {
+		addrColumnsResult = append(addrColumnsResult, &columnsResult[i])
+	}
+
+	err := row.Scan(addrColumnsResult...)
+
+	var mapColumnsResult = make(map[string]interface{})
+
+	i := 0
+	for _, value := range selectQueryBuilder.columns {
+		mapColumnsResult[value] = columnsResult[i]
+		i++
+	}
+
+	for _, value := range selectQueryBuilder.aggregates {
+		mapColumnsResult[value] = columnsResult[i]
+		i++
+	}
+
+	return mapColumnsResult, err
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
+	if selectQueryBuilder.SectionSelect != "" || selectQueryBuilder.SectionAggregate != "" {
+		panic("configuration not supported")
+	}
+
 	connection := db.GetConnectionFromDB()
 	defer selectQueryBuilder.Clean()
 
@@ -207,6 +261,10 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, 
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
+	if selectQueryBuilder.SectionSelect != "" || selectQueryBuilder.SectionAggregate != "" {
+		panic("configuration not supported")
+	}
+
 	connection := db.GetConnectionFromDB()
 	defer selectQueryBuilder.Clean()
 
@@ -224,8 +282,7 @@ func GetSubSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
 
 func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
 	if singletonIQueryBuilder == nil {
-		singletonSQueryBuilder = &SelectQueryBuilder{}
-		singletonSQueryBuilder.root = true
+		singletonSQueryBuilder = &SelectQueryBuilder{root: true}
 	}
 
 	singletonSQueryBuilder.SetModel(model)

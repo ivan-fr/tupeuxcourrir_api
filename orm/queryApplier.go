@@ -8,6 +8,8 @@ type ModelsScanned struct {
 type QueryApplier struct {
 	model                   interface{}
 	relationshipTargetOrder []interface{}
+	columns                 []string
+	aggregates              []string
 }
 
 func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) ([]*ModelsScanned, error) {
