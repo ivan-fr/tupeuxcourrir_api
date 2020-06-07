@@ -123,7 +123,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", putIntermediateString(
+	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", PutIntermediateString(
 		",",
 		"space",
 		orderFilter))
@@ -142,7 +142,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
+	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", PutIntermediateString(
 		" and",
 		"setter",
 		mapFilter))
@@ -196,7 +196,7 @@ func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQ
 	}
 
 	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
-		putIntermediateString(",", "space", mapColumns))
+		PutIntermediateString(",", "space", mapColumns))
 
 	return selectQueryBuilder
 }
@@ -211,7 +211,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQu
 	}
 
 	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v",
-		putIntermediateString(",", "space", mapColumns))
+		PutIntermediateString(",", "space", mapColumns))
 
 	return selectQueryBuilder
 }
@@ -223,14 +223,14 @@ func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]
 		selectQueryBuilder.aggregates = append(selectQueryBuilder.aggregates, key)
 	}
 
-	selectQueryBuilder.SectionAggregate = putIntermediateString(
+	selectQueryBuilder.SectionAggregate = PutIntermediateString(
 		",", "aggregate", aggregateMap)
 
 	return selectQueryBuilder
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", putIntermediateString(
+	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", PutIntermediateString(
 		",", "aggregate", aggregateMap))
 
 	return selectQueryBuilder

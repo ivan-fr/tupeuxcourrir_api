@@ -3,15 +3,16 @@ package main
 import (
 	"fmt"
 	"tupeuxcourrir_api/db"
-	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 )
 
 func main() {
 	defer db.DeferClose()
 
-	uQueryBuilder := orm.GetDeleteQueryBuilder(models.NewMessage())
-	uQueryBuilder.Where(map[string]interface{}{"IdUser": 9})
+	s := orm.PutIntermediateString(",", "aggregate",
+		map[string]interface{}{"COUNT__in": map[string]interface{}{
+			"IdUser": []string{"3", "5"},
+		}})
 
-	fmt.Println(uQueryBuilder.ConstructSql())
+	fmt.Printf("p%vp\n", s)
 }

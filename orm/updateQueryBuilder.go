@@ -40,7 +40,7 @@ func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 		}
 	}
 
-	updateQueryBuilder.SectionSet = fmt.Sprintf("SET %v", putIntermediateString(
+	updateQueryBuilder.SectionSet = fmt.Sprintf("SET %v", PutIntermediateString(
 		",",
 		"setter",
 		mapFilter))
@@ -67,7 +67,7 @@ func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
 }
 
 func (updateQueryBuilder *UpdateQueryBuilder) Where(mapFilter map[string]interface{}) *UpdateQueryBuilder {
-	updateQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
+	updateQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", PutIntermediateString(
 		" and",
 		"setter",
 		mapFilter))

@@ -53,8 +53,8 @@ func analyseSliceContext(context interface{},
 	var newSql string
 
 	switch context.(type) {
-	case []int, []string:
-		for i, value := range context.([]interface{}) {
+	case []int:
+		for i, value := range context.([]int) {
 			if i > 0 {
 				newSql = newSql + " "
 			}
@@ -63,8 +63,24 @@ func analyseSliceContext(context interface{},
 				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
 			}
 
-			if 0 <= i && i <= (len(context.([]interface{}))-2) &&
-				(0 != len(context.([]interface{}))-1) {
+			if 0 <= i && i <= (len(context.([]int))-2) &&
+				(0 != len(context.([]int))-1) {
+				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
+			}
+			i++
+		}
+	case []string:
+		for i, value := range context.([]string) {
+			if i > 0 {
+				newSql = newSql + " "
+			}
+			switch mapSetterMode {
+			case "space":
+				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
+			}
+
+			if 0 <= i && i <= (len(context.([]string))-2) &&
+				(0 != len(context.([]string))-1) {
 				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
 			}
 			i++
@@ -148,7 +164,7 @@ func analyseSetterMode(sql, columnName string, value interface{}, comparative st
 		newSql = fmt.Sprintf(formats[1], sql, columnName, "NULL")
 	case []string:
 		if comparative == "IN" {
-			newSql = fmt.Sprintf(formats[2], sql, columnName, putIntermediateString(
+			newSql = fmt.Sprintf(formats[2], sql, columnName, PutIntermediateString(
 				",",
 				"space",
 				value.([]string)))
@@ -157,7 +173,7 @@ func analyseSetterMode(sql, columnName string, value interface{}, comparative st
 		}
 	case []int:
 		if comparative == "IN" {
-			newSql = fmt.Sprintf(formats[2], sql, columnName, putIntermediateString(
+			newSql = fmt.Sprintf(formats[2], sql, columnName, PutIntermediateString(
 				",",
 				"space",
 				value.([]int)))
@@ -191,7 +207,7 @@ func analyseAggregateMode(sql,
 					newSql = fmt.Sprintf(formats[2], sql, aggregateFunction, columnName, vToCompare.(string))
 				case []string:
 					if comparative == "IN" {
-						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
+						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, PutIntermediateString(
 							",",
 							"space",
 							vToCompare.([]string)))
@@ -200,7 +216,7 @@ func analyseAggregateMode(sql,
 					}
 				case []int:
 					if comparative == "IN" {
-						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
+						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, PutIntermediateString(
 							",",
 							"space",
 							vToCompare.([]int)))
@@ -252,7 +268,7 @@ func analyseSpaceModeFromSlice(sql,
 	return newSql
 }
 
-func putIntermediateString(intermediateStringMap string,
+func PutIntermediateString(intermediateStringMap string,
 	mapSetterMode string,
 	context interface{}) string {
 
