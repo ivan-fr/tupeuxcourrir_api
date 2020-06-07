@@ -85,6 +85,8 @@ func analyseSliceContext(context interface{},
 			}
 			i++
 		}
+	default:
+		panic("undefined/wrong mode")
 	}
 
 	return newSql
@@ -131,6 +133,8 @@ func analyseMapStringInterfaceContext(context interface{},
 			newSql = analyseAggregateMode(newSql, columnName, value, comparative, formats)
 		case "space":
 			newSql = analyseSpaceModeFromMap(newSql, columnName, value, formats)
+		default:
+			panic("undefined mode")
 		}
 
 		if 0 <= i && i <= (len(context.(map[string]interface{}))-2) &&
