@@ -53,8 +53,8 @@ func analyseSliceContext(context interface{},
 	var newSql string
 
 	switch context.(type) {
-	case []int:
-		for i, value := range context.([]int) {
+	case []int, []string:
+		for i, value := range context.([]interface{}) {
 			if i > 0 {
 				newSql = newSql + " "
 			}
@@ -63,24 +63,8 @@ func analyseSliceContext(context interface{},
 				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
 			}
 
-			if 0 <= i && i <= (len(context.([]int))-2) &&
-				(0 != len(context.([]int))-1) {
-				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
-			}
-			i++
-		}
-	case []string:
-		for i, value := range context.([]string) {
-			if i > 0 {
-				newSql = newSql + " "
-			}
-			switch mapSetterMode {
-			case "space":
-				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
-			}
-
-			if 0 <= i && i <= (len(context.([]string))-2) &&
-				(0 != len(context.([]string))-1) {
+			if 0 <= i && i <= (len(context.([]interface{}))-2) &&
+				(0 != len(context.([]interface{}))-1) {
 				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
 			}
 			i++
