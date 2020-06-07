@@ -189,14 +189,8 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
-	var mapColumns = make(map[string]interface{})
-
-	for _, column := range columns {
-		mapColumns[column] = ""
-	}
-
 	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
-		PutIntermediateString(",", "space", mapColumns))
+		PutIntermediateString(",", "space", columns))
 
 	return selectQueryBuilder
 }
@@ -204,14 +198,8 @@ func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQ
 func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
 	selectQueryBuilder.columns = columns
 
-	var mapColumns = make(map[string]interface{})
-
-	for _, column := range columns {
-		mapColumns[column] = ""
-	}
-
 	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v",
-		PutIntermediateString(",", "space", mapColumns))
+		PutIntermediateString(",", "space", columns))
 
 	return selectQueryBuilder
 }
