@@ -17,6 +17,7 @@ type SelectQueryBuilder struct {
 	SectionOffset    string
 	SectionJoin      []string
 	SectionGroupBy   string
+	SectionHaving    string
 	rollUp           bool
 	root             bool
 }
@@ -49,7 +50,7 @@ func (selectQueryBuilder *SelectQueryBuilder) constructSql() string {
 		withRollUp = " WITH ROLLUP"
 	}
 
-	return fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v;",
+	return fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v;",
 		selectQueryBuilder.SectionSelect,
 		selectQueryBuilder.SectionAggregate,
 		selectQueryBuilder.SectionFrom,
@@ -57,6 +58,7 @@ func (selectQueryBuilder *SelectQueryBuilder) constructSql() string {
 		selectQueryBuilder.SectionWhere,
 		selectQueryBuilder.SectionGroupBy,
 		withRollUp,
+		selectQueryBuilder.SectionHaving,
 		selectQueryBuilder.SectionOrder,
 		selectQueryBuilder.SectionLimit,
 		selectQueryBuilder.SectionOffset)
@@ -163,6 +165,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Clean() {
 	selectQueryBuilder.SectionSelect = ""
 	selectQueryBuilder.SectionAggregate = ""
 	selectQueryBuilder.SectionGroupBy = ""
+	selectQueryBuilder.SectionHaving = ""
 	selectQueryBuilder.rollUp = false
 	selectQueryBuilder.QueryApplier.Clean()
 }
@@ -214,7 +217,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQu
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.aggregates = nil
+	selectQueryBuilder.aggregates = make([]string, 0)
 
 	for key := range aggregateMap {
 		selectQueryBuilder.aggregates = append(selectQueryBuilder.aggregates, key)
@@ -222,6 +225,13 @@ func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]
 
 	selectQueryBuilder.SectionAggregate = putIntermediateString(
 		",", "aggregate", aggregateMap)
+
+	return selectQueryBuilder
+}
+
+func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
+	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", putIntermediateString(
+		",", "aggregate", aggregateMap))
 
 	return selectQueryBuilder
 }

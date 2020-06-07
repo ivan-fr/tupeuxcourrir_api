@@ -68,7 +68,7 @@ func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool
 }
 
 func (queryApplier *QueryApplier) Clean() {
-	queryApplier.relationshipTargetOrder = nil
-	queryApplier.columns = nil
-	queryApplier.aggregates = nil
+	queryApplier.relationshipTargetOrder = make([]interface{}, 0)
+	queryApplier.columns = make([]string, 0)
+	queryApplier.aggregates = make([]string, 0)
 }
