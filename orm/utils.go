@@ -27,78 +27,268 @@ func getTableName(name string) string {
 	return strings.ToLower(fmt.Sprintf("%vs", name))
 }
 
-func putIntermediateString(intermediateStringMap string,
-	mapSetterMode string,
-	theMap map[string]interface{}) string {
-
-	var newSql string
-	var format string
-	var formatAlternative string
-
-	switch mapSetterMode {
-	case "setter":
-		format = "%v%v = '%v'"
-		formatAlternative = "%v%v = %v"
-	case "space":
-		format = "%v%v %v"
-		formatAlternative = "%v%v"
-	case "aggregate":
-		format = "%v%v(%v)"
+func getComparativeFormat(comparative string) string {
+	switch comparative {
+	case "":
+		return "="
+	case "in":
+		return "IN"
+	case "gt":
+		return ">"
+	case "gte":
+		return ">="
+	case "lt":
+		return "<"
+	case "lte":
+		return "<="
 	default:
-		panic("undefined mode from map")
+		panic("undefined format")
+	}
+}
+
+func analyseSliceContext(context interface{},
+	intermediateStringMap,
+	mapSetterMode string,
+	formats []string) string {
+	var newSql string
+
+	switch context.(type) {
+	case []int:
+		for i, value := range context.([]int) {
+			if i > 0 {
+				newSql = newSql + " "
+			}
+			switch mapSetterMode {
+			case "space":
+				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
+			}
+
+			if 0 <= i && i <= (len(context.([]int))-2) &&
+				(0 != len(context.([]int))-1) {
+				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
+			}
+			i++
+		}
+	case []string:
+		for i, value := range context.([]string) {
+			if i > 0 {
+				newSql = newSql + " "
+			}
+			switch mapSetterMode {
+			case "space":
+				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
+			}
+
+			if 0 <= i && i <= (len(context.([]string))-2) &&
+				(0 != len(context.([]string))-1) {
+				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
+			}
+			i++
+		}
 	}
 
+	return newSql
+}
+
+func analyseMapStringInterfaceContext(context interface{},
+	intermediateStringMap,
+	mapSetterMode string,
+	formats []string) string {
+	var newSql string
+	var keySplit []string
+	var columnName string
+	var comparative string
+
 	var i int
-	for key, value := range theMap {
+	for key, value := range context.(map[string]interface{}) {
 		if i > 0 {
 			newSql = newSql + " "
 		}
 
-		switch mapSetterMode {
-		case "setter":
-			switch value.(type) {
-			case string:
-				if value.(string) == "Now()" {
-					newSql = fmt.Sprintf(formatAlternative, newSql, key, "Now()")
-				} else {
-					newSql = fmt.Sprintf(format, newSql, key, value.(string))
-				}
-			case int:
-				newSql = fmt.Sprintf(formatAlternative, newSql, key, value.(int))
-			case bool:
-				newSql = fmt.Sprintf(formatAlternative, newSql, key, value.(bool))
-			case nil:
-				newSql = fmt.Sprintf(formatAlternative, newSql, key, "NULL")
-			default:
-				panic("undefined type")
-			}
-		case "aggregate":
-			switch value.(type) {
-			case string:
-				newSql = fmt.Sprintf(format, newSql, key, value.(string))
-			default:
-				panic("undefined type")
-			}
-		case "space":
-			switch value.(type) {
-			case string:
-				if value == "" {
-					newSql = fmt.Sprintf(formatAlternative, newSql, key)
-				} else {
-					newSql = fmt.Sprintf(format, newSql, key, value)
-				}
-			default:
-				panic("undefined type")
-			}
+		keySplit = strings.Split(key, "__")
+
+		if len(keySplit) > 1 {
+			columnName = strings.Join(keySplit[:len(keySplit)-1], "__")
+		} else {
+			columnName = keySplit[0]
 		}
 
-		if 0 <= i && i <= (len(theMap)-2) && (0 != len(theMap)-1) {
+		for i := range formats {
+			if len(keySplit) == 1 {
+				comparative = getComparativeFormat("")
+			} else {
+				comparative = getComparativeFormat(keySplit[len(keySplit)-1])
+			}
+
+			formats[i] = fmt.Sprintf(formats[i], comparative)
+			formats[i] = strings.ReplaceAll(formats[i], ".", "%v")
+		}
+
+		switch mapSetterMode {
+		case "setter":
+			newSql = analyseSetterMode(newSql, columnName, value, comparative, formats)
+		case "aggregate":
+			newSql = analyseAggregateMode(newSql, columnName, value, comparative, formats)
+		case "space":
+			newSql = analyseSpaceModeFromMap(newSql, columnName, value, formats)
+		}
+
+		if 0 <= i && i <= (len(context.(map[string]interface{}))-2) &&
+			(0 != len(context.(map[string]interface{}))-1) {
 			newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
 		}
 		i++
 	}
+	return newSql
+}
+
+func analyseSetterMode(sql, columnName string, value interface{}, comparative string, formats []string) string {
+	var newSql string
+
+	switch value.(type) {
+	case string:
+		if value.(string) == "Now()" {
+			newSql = fmt.Sprintf(formats[1], sql, columnName, "Now()")
+		} else {
+			newSql = fmt.Sprintf(formats[0], sql, columnName, value.(string))
+		}
+	case int:
+		newSql = fmt.Sprintf(formats[1], sql, columnName, value.(int))
+	case bool:
+		newSql = fmt.Sprintf(formats[1], sql, columnName, value.(bool))
+	case nil:
+		newSql = fmt.Sprintf(formats[1], sql, columnName, "NULL")
+	case []string:
+		if comparative == "IN" {
+			newSql = fmt.Sprintf(formats[2], sql, columnName, putIntermediateString(
+				",",
+				"space",
+				value.([]string)))
+		} else {
+			panic("incompatible comparative")
+		}
+	case []int:
+		if comparative == "IN" {
+			newSql = fmt.Sprintf(formats[2], sql, columnName, putIntermediateString(
+				",",
+				"space",
+				value.([]int)))
+		} else {
+			panic("incompatible comparative")
+		}
+	default:
+		panic("undefined type from setter")
+	}
 
 	return newSql
+}
+
+func analyseAggregateMode(sql,
+	aggregateFunction string,
+	value interface{},
+	comparative string,
+	formats []string) string {
+	var newSql string
+
+	switch value.(type) {
+	case string:
+		newSql = fmt.Sprintf(formats[0], sql, aggregateFunction, value.(string))
+	case map[string]interface{}:
+		if len(value.(map[string]interface{})) == 1 {
+			for columnName, vToCompare := range value.(map[string]interface{}) {
+				switch vToCompare.(type) {
+				case int:
+					newSql = fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, vToCompare.(int))
+				case string:
+					newSql = fmt.Sprintf(formats[2], sql, aggregateFunction, columnName, vToCompare.(string))
+				case []string:
+					if comparative == "IN" {
+						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
+							",",
+							"space",
+							vToCompare.([]string)))
+					} else {
+						panic("incompatible comparative")
+					}
+				case []int:
+					if comparative == "IN" {
+						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
+							",",
+							"space",
+							vToCompare.([]int)))
+					} else {
+						panic("incompatible comparative")
+					}
+				}
+			}
+		} else {
+			panic("undefined configuration value")
+		}
+	default:
+		panic("undefined type from aggregate")
+	}
+
+	return newSql
+}
+
+func analyseSpaceModeFromMap(sql,
+	columnName string,
+	value interface{},
+	formats []string) string {
+	var newSql string
+	switch value.(type) {
+	case string:
+		if value == "" {
+			panic("use a slice of your keys")
+		} else {
+			newSql = fmt.Sprintf(formats[0], sql, columnName, value)
+		}
+	default:
+		panic("undefined type from space")
+	}
+	return newSql
+}
+
+func analyseSpaceModeFromSlice(sql,
+	value interface{},
+	formats []string) string {
+	var newSql string
+	switch value.(type) {
+	case string:
+		newSql = fmt.Sprintf(formats[1], sql, value)
+	case int:
+		newSql = fmt.Sprintf(formats[2], sql, value)
+	default:
+		panic("undefined type from space")
+	}
+	return newSql
+}
+
+func putIntermediateString(intermediateStringMap string,
+	mapSetterMode string,
+	context interface{}) string {
+
+	var formats = make([]string, 0)
+
+	switch mapSetterMode {
+	case "setter":
+		formats = []string{".. %v '.'", ".. %v .", ".. %v (.)"}
+	case "space":
+		formats = []string{"%v%v %v", "%v'%v'", "%v%v"}
+	case "aggregate":
+		formats = []string{"..(.)", "..(.) %v .", "..(.) %v '.'", "..(.) %v (.)"}
+	default:
+		panic("undefined mode from map")
+	}
+
+	switch context.(type) {
+	case map[string]interface{}:
+		return analyseMapStringInterfaceContext(context, intermediateStringMap, mapSetterMode, formats)
+	case []string, []int:
+		return analyseSliceContext(context, intermediateStringMap, mapSetterMode, formats)
+	default:
+		panic("undefined context type")
+	}
 }
 
 func getPKFieldNameFromModel(model interface{}) string {
