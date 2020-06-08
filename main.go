@@ -9,10 +9,8 @@ import (
 func main() {
 	defer db.DeferClose()
 
-	s := orm.PutIntermediateString(",", "aggregate",
-		map[string]interface{}{"COUNT__in": map[string]interface{}{
-			"IdUser": []string{"3", "5"},
-		}})
+	s := orm.PutIntermediateString(",", "setter",
+		map[string]interface{}{"COUNT__in": []interface{}{"3", 5, "Now()", nil}, "lol__lte": "55"})
 
 	fmt.Printf("p%vp\n", s)
 }

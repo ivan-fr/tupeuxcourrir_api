@@ -52,41 +52,23 @@ func analyseSliceContext(context interface{},
 	formats []string) string {
 	var newSql string
 
-	switch context.(type) {
-	case []int:
-		for i, value := range context.([]int) {
+	valueOfContext := reflect.ValueOf(context)
+
+	if valueOfContext.Type().Kind() == reflect.Slice {
+		for i := 0; i < valueOfContext.Len(); i++ {
 			if i > 0 {
 				newSql = newSql + " "
 			}
 			switch mapSetterMode {
 			case "space":
-				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
+				newSql = analyseSpaceModeFromSlice(newSql, valueOfContext.Index(i).Interface(), formats)
 			}
 
-			if 0 <= i && i <= (len(context.([]int))-2) &&
-				(0 != len(context.([]int))-1) {
+			if 0 <= i && i <= (valueOfContext.Len()-2) &&
+				(0 != valueOfContext.Len()-1) {
 				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
 			}
-			i++
 		}
-	case []string:
-		for i, value := range context.([]string) {
-			if i > 0 {
-				newSql = newSql + " "
-			}
-			switch mapSetterMode {
-			case "space":
-				newSql = analyseSpaceModeFromSlice(newSql, value, formats)
-			}
-
-			if 0 <= i && i <= (len(context.([]string))-2) &&
-				(0 != len(context.([]string))-1) {
-				newSql = fmt.Sprintf("%v%v", newSql, intermediateStringMap)
-			}
-			i++
-		}
-	default:
-		panic("undefined/wrong mode")
 	}
 
 	return newSql
@@ -96,6 +78,8 @@ func analyseMapStringInterfaceContext(context interface{},
 	intermediateStringMap,
 	mapSetterMode string,
 	formats []string) string {
+
+	var effectiveFormat []string
 	var newSql string
 	var keySplit []string
 	var columnName string
@@ -115,24 +99,28 @@ func analyseMapStringInterfaceContext(context interface{},
 			columnName = keySplit[0]
 		}
 
-		for i := range formats {
-			if len(keySplit) == 1 {
-				comparative = getComparativeFormat("")
-			} else {
-				comparative = getComparativeFormat(keySplit[len(keySplit)-1])
+		if mapSetterMode != "space" {
+			effectiveFormat = make([]string, 0)
+			for i := range formats {
+				if len(keySplit) == 1 {
+					comparative = getComparativeFormat("")
+				} else {
+					comparative = getComparativeFormat(keySplit[len(keySplit)-1])
+				}
+				effectiveFormat = append(effectiveFormat, fmt.Sprintf(formats[i], comparative))
+				effectiveFormat[i] = strings.ReplaceAll(effectiveFormat[i], ".", "%v")
 			}
-
-			formats[i] = fmt.Sprintf(formats[i], comparative)
-			formats[i] = strings.ReplaceAll(formats[i], ".", "%v")
+		} else {
+			effectiveFormat = formats
 		}
 
 		switch mapSetterMode {
 		case "setter":
-			newSql = analyseSetterMode(newSql, columnName, value, comparative, formats)
+			newSql = analyseSetterMode(newSql, columnName, value, comparative, effectiveFormat)
 		case "aggregate":
-			newSql = analyseAggregateMode(newSql, columnName, value, comparative, formats)
+			newSql = analyseAggregateMode(newSql, columnName, value, comparative, effectiveFormat)
 		case "space":
-			newSql = analyseSpaceModeFromMap(newSql, columnName, value, formats)
+			newSql = analyseSpaceModeFromMap(newSql, columnName, value, effectiveFormat)
 		default:
 			panic("undefined mode")
 		}
@@ -148,6 +136,7 @@ func analyseMapStringInterfaceContext(context interface{},
 
 func analyseSetterMode(sql, columnName string, value interface{}, comparative string, formats []string) string {
 	var newSql string
+	var checkSlice = false
 
 	switch value.(type) {
 	case string:
@@ -157,31 +146,32 @@ func analyseSetterMode(sql, columnName string, value interface{}, comparative st
 			newSql = fmt.Sprintf(formats[0], sql, columnName, value.(string))
 		}
 	case int:
+		fmt.Println(formats[1])
 		newSql = fmt.Sprintf(formats[1], sql, columnName, value.(int))
+		fmt.Println(newSql)
 	case bool:
 		newSql = fmt.Sprintf(formats[1], sql, columnName, value.(bool))
 	case nil:
 		newSql = fmt.Sprintf(formats[1], sql, columnName, "NULL")
-	case []string:
-		if comparative == "IN" {
-			newSql = fmt.Sprintf(formats[2], sql, columnName, PutIntermediateString(
-				",",
-				"space",
-				value.([]string)))
-		} else {
-			panic("incompatible comparative")
-		}
-	case []int:
-		if comparative == "IN" {
-			newSql = fmt.Sprintf(formats[2], sql, columnName, PutIntermediateString(
-				",",
-				"space",
-				value.([]int)))
-		} else {
-			panic("incompatible comparative")
-		}
 	default:
-		panic("undefined type from setter")
+		checkSlice = true
+	}
+
+	if checkSlice {
+		valueOfValue := reflect.ValueOf(value)
+
+		if valueOfValue.Type().Kind() == reflect.Slice {
+			if comparative == "IN" {
+				newSql = fmt.Sprintf(formats[2], sql, columnName, PutIntermediateString(
+					",",
+					"space",
+					valueOfValue.Interface()))
+			} else {
+				panic("incompatible comparative")
+			}
+		} else {
+			panic("unsupported/wrong value type from setter")
+		}
 	}
 
 	return newSql
@@ -203,6 +193,8 @@ func analyseAggregateMode(sql,
 				switch vToCompare.(type) {
 				case int:
 					newSql = fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, vToCompare.(int))
+				case nil:
+					newSql = fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, "NULL")
 				case string:
 					newSql = fmt.Sprintf(formats[2], sql, aggregateFunction, columnName, vToCompare.(string))
 				case []string:
@@ -259,9 +251,15 @@ func analyseSpaceModeFromSlice(sql,
 	var newSql string
 	switch value.(type) {
 	case string:
-		newSql = fmt.Sprintf(formats[1], sql, value)
+		if value.(string) == "Now()" {
+			newSql = fmt.Sprintf(formats[2], sql, "Now()")
+		} else {
+			newSql = fmt.Sprintf(formats[1], sql, value.(string))
+		}
+	case nil:
+		newSql = fmt.Sprintf(formats[2], sql, "NULL")
 	case int:
-		newSql = fmt.Sprintf(formats[2], sql, value)
+		newSql = fmt.Sprintf(formats[2], sql, value.(int))
 	default:
 		panic("undefined type from space")
 	}
@@ -288,7 +286,7 @@ func PutIntermediateString(intermediateStringMap string,
 	switch context.(type) {
 	case map[string]interface{}:
 		return analyseMapStringInterfaceContext(context, intermediateStringMap, mapSetterMode, formats)
-	case []string, []int:
+	case []string, []int, interface{}:
 		return analyseSliceContext(context, intermediateStringMap, mapSetterMode, formats)
 	default:
 		panic("undefined context type")

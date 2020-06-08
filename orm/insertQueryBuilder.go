@@ -18,53 +18,35 @@ var singletonIQueryBuilder *InsertQueryBuilder
 
 func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
 	valueOfModel := reflect.ValueOf(modelValue).Elem()
-	var format1, format2, format string
 
-	sectionValues := "("
+	var listToInsert = make([]interface{}, 0)
+
 	for j := 1; j < valueOfModel.NumField(); j++ {
-		format1 = "%v"
-		if j == 1 {
-			format1 += "'%v'"
-		} else {
-			format1 += ", '%v'"
-		}
-
-		format2 = "%v"
-		if j == 1 {
-			format2 += "%v"
-		} else {
-			format2 += ", %v"
-		}
-
 		if !isRelationshipField(valueOfModel.Field(j)) {
 			var fieldTime, okTime = valueOfModel.Field(j).Interface().(time.Time)
 
 			if okTime {
-				var valueToInsert string
 				switch {
 				case strings.Contains(valueOfModel.Type().Field(j).Name, "CreatedAt"):
-					format = format2
-					valueToInsert = "Now()"
+					listToInsert = append(listToInsert, "Now()")
 				case fieldTime.IsZero():
-					format = format2
-					valueToInsert = "NULL"
+					listToInsert = append(listToInsert, nil)
 				default:
-					format = format1
-					valueToInsert = fieldTime.Format("YYYY-MM-DD HH:MM:SS")
+					listToInsert = append(listToInsert, fieldTime.Format("YYYY-MM-DD HH:MM:SS"))
 				}
-				sectionValues = fmt.Sprintf(format, sectionValues, valueToInsert)
 			} else {
-				if valueOfModel.Field(j).Kind() == reflect.String {
-					format = format1
-				} else {
-					format = format2
+				switch valueOfModel.Field(j).Kind() {
+				case reflect.String:
+					listToInsert = append(listToInsert, valueOfModel.Field(j).String())
+				case reflect.Int:
+					listToInsert = append(listToInsert, valueOfModel.Field(j).Int())
+				default:
+					panic("unsupported kind of field")
 				}
-
-				sectionValues = fmt.Sprintf(format, sectionValues, valueOfModel.Field(j))
 			}
 		}
 	}
-	return sectionValues + ")"
+	return fmt.Sprintf("(%v)", PutIntermediateString(",", "space", listToInsert))
 }
 
 func (insertQueryBuilder *InsertQueryBuilder) getSQlValuesToInsert() string {
