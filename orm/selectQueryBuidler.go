@@ -17,8 +17,7 @@ type SelectQueryBuilder struct {
 	SectionWhere     string
 	SectionWhereStmt []interface{}
 
-	SectionOrder     string
-	SectionOrderStmt []interface{}
+	SectionOrder string
 
 	SectionFrom   string
 	SectionLimit  string
@@ -26,8 +25,7 @@ type SelectQueryBuilder struct {
 
 	SectionJoin []string
 
-	SectionGroupBy     string
-	SectionGroupByStmt []interface{}
+	SectionGroupBy string
 
 	SectionHaving     string
 	SectionHavingStmt []interface{}
@@ -75,6 +73,15 @@ func (selectQueryBuilder *SelectQueryBuilder) ConstructSql() string {
 		selectQueryBuilder.SectionOrder,
 		selectQueryBuilder.SectionLimit,
 		selectQueryBuilder.SectionOffset)
+}
+
+func (selectQueryBuilder *SelectQueryBuilder) GetStmts() []interface{} {
+	var stmtsInterface = make([]interface{}, 0)
+	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionSelectStmt...)
+	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionAggregateStmt...)
+	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionWhereStmt...)
+	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionHavingStmt...)
+	return stmtsInterface
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) addMTO(fieldInterface interface{}) {
@@ -137,7 +144,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
 	var str string
-	str, selectQueryBuilder.SectionOrderStmt = ContructStatement(
+	str, _ = ConstructSQlStmts(
 		",",
 		"space",
 		orderFilter)
@@ -158,7 +165,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 
 func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
 	var str string
-	str, selectQueryBuilder.SectionWhereStmt = ContructStatement(
+	str, selectQueryBuilder.SectionWhereStmt = ConstructSQlStmts(
 		" and",
 		"setter",
 		mapFilter)
@@ -210,9 +217,8 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
-	var str string
-	str, selectQueryBuilder.SectionGroupByStmt = ContructStatement(",", "space", columns)
-	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v", str)
+	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
+		ConstructSQlSpaceNoStmts(",", columns))
 
 	return selectQueryBuilder
 }
@@ -221,17 +227,17 @@ func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQu
 	selectQueryBuilder.columns = columns
 
 	var str string
-	str, selectQueryBuilder.SectionSelectStmt = ContructStatement(",", "space", columns)
+	str, selectQueryBuilder.SectionSelectStmt = ConstructSQlStmts(",", "space", columns)
 	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v", str)
 
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateslice []string) *SelectQueryBuilder {
-	selectQueryBuilder.aggregates = aggregateslice
+func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateSlice []string) *SelectQueryBuilder {
+	selectQueryBuilder.aggregates = aggregateSlice
 	var str string
-	str, selectQueryBuilder.SectionAggregateStmt = ContructStatement(
-		",", "aggregate", aggregateslice)
+	str, selectQueryBuilder.SectionAggregateStmt = ConstructSQlStmts(
+		",", "aggregate", aggregateSlice)
 	selectQueryBuilder.SectionAggregate = str
 
 	return selectQueryBuilder
@@ -239,7 +245,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateslice []string)
 
 func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
 	var str string
-	str, selectQueryBuilder.SectionHavingStmt = ContructStatement(
+	str, selectQueryBuilder.SectionHavingStmt = ConstructSQlStmts(
 		",", "aggregate", aggregateMap)
 	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", str)
 

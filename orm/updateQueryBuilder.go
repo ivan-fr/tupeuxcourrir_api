@@ -44,7 +44,7 @@ func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 	}
 
 	var str string
-	str, updateQueryBuilder.SectionSetStmt = ContructStatement(
+	str, updateQueryBuilder.SectionSetStmt = ConstructSQlStmts(
 		",",
 		"setter",
 		mapFilter)
@@ -73,7 +73,7 @@ func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
 
 func (updateQueryBuilder *UpdateQueryBuilder) Where(mapFilter map[string]interface{}) *UpdateQueryBuilder {
 	var str string
-	str, updateQueryBuilder.SectionWhereStmt = ContructStatement(
+	str, updateQueryBuilder.SectionWhereStmt = ConstructSQlStmts(
 		" and",
 		"setter",
 		mapFilter)

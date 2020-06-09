@@ -49,7 +49,8 @@ func getComparativeFormat(comparative string) string {
 func analyseSliceContext(context interface{},
 	intermediateStringMap,
 	mapSetterMode string,
-	formats []string) (string, []interface{}) {
+	formats []string,
+	stmts bool) (string, []interface{}) {
 
 	var newSql string
 	var valueStmts []interface{}
@@ -64,8 +65,12 @@ func analyseSliceContext(context interface{},
 			}
 			switch mapSetterMode {
 			case "space":
-				newSql, valueStmt = analyseSpaceModeFromSlice(newSql, valueOfContext.Index(i).Interface(), formats)
-				putStmtToASlice(valueStmts, valueStmt)
+				if stmts {
+					newSql, valueStmt = analyseSpaceModeFromSlice(newSql, valueOfContext.Index(i).Interface(), formats)
+					putStmtToASlice(valueStmts, valueStmt)
+				} else {
+					newSql = analyseSpaceModeFromSliceNoStmt(newSql, valueOfContext.Index(i).Interface(), formats)
+				}
 			}
 
 			if 0 <= i && i <= (valueOfContext.Len()-2) &&
@@ -187,7 +192,7 @@ func analyseSetterMode(sql, columnName string, value interface{}, comparative st
 	if checkSlice && comparative == "IN" {
 		valueOfValue := reflect.ValueOf(value)
 		if valueOfValue.Type().Kind() == reflect.Slice {
-			str, stmts := ContructStatement(",", "space", valueOfValue.Interface())
+			str, stmts := ConstructSQlStmts(",", "space", valueOfValue.Interface())
 			return fmt.Sprintf(formats[1], sql, columnName, str), stmts
 		}
 	}
@@ -221,7 +226,7 @@ func analyseAggregateMode(sql, aggregateFunction string, value interface{}, comp
 			if comparative == "IN" && checkSlice {
 				valueOfVToCompare := reflect.ValueOf(vToCompare)
 				if valueOfVToCompare.Type().Kind() == reflect.Slice {
-					str, stmts := ContructStatement(",", "space", valueOfVToCompare.Interface())
+					str, stmts := ConstructSQlStmts(",", "space", valueOfVToCompare.Interface())
 					return fmt.Sprintf(formats[1], sql, columnName, str), stmts
 				}
 			}
@@ -264,28 +269,55 @@ func analyseSpaceModeFromSlice(sql,
 	}
 }
 
-func ContructStatement(intermediateStringMap string,
-	mapSetterMode string,
-	context interface{}) (string, []interface{}) {
+func analyseSpaceModeFromSliceNoStmt(sql,
+	value interface{},
+	formats []string) string {
+	switch value.(type) {
+	case string:
+		return fmt.Sprintf(formats[1], sql, value.(string))
+	default:
+		panic("undefined type from space")
+	}
+}
 
-	var formats = make([]string, 0)
-
+func getFormatsMode(mapSetterMode string) []string {
 	switch mapSetterMode {
 	case "setter":
-		formats = []string{".. %v .", ".. %v (.)"}
+		return []string{".. %v .", ".. %v (.)"}
 	case "space":
-		formats = []string{"%v%v %v", "%v%v"}
+		return []string{"%v%v %v", "%v%v"}
 	case "aggregate":
-		formats = []string{"..(.)", "..(.) %v .", "..(.) %v (.)"}
+		return []string{"..(.)", "..(.) %v .", "..(.) %v (.)"}
 	default:
 		panic("undefined mode from map")
 	}
+}
+
+func ConstructSQlStmts(intermediateStringMap string,
+	mapSetterMode string,
+	context interface{}) (string, []interface{}) {
+
+	var formats = getFormatsMode(mapSetterMode)
 
 	switch context.(type) {
 	case map[string]interface{}:
 		return analyseMapStringInterfaceContext(context, intermediateStringMap, mapSetterMode, formats)
 	case []string, []int:
-		return analyseSliceContext(context, intermediateStringMap, mapSetterMode, formats)
+		return analyseSliceContext(context, intermediateStringMap, mapSetterMode, formats, true)
+	default:
+		panic("undefined context type")
+	}
+}
+
+func ConstructSQlSpaceNoStmts(intermediateStringMap string,
+	context interface{}) string {
+
+	var formats = getFormatsMode("space")
+
+	switch context.(type) {
+	case []string, []int:
+		str, _ := analyseSliceContext(context, intermediateStringMap, "space", formats, false)
+		return str
 	default:
 		panic("undefined context type")
 	}

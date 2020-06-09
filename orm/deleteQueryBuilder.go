@@ -31,7 +31,7 @@ func (deleteQueryBuilder *DeleteQueryBuilder) ConstructSql() string {
 
 func (deleteQueryBuilder *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
 	var str string
-	str, deleteQueryBuilder.SectionWhereStmt = ContructStatement(
+	str, deleteQueryBuilder.SectionWhereStmt = ConstructSQlStmts(
 		" and",
 		"setter",
 		mapFilter)
