@@ -49,8 +49,11 @@ func getComparativeFormat(comparative string) string {
 func analyseSliceContext(context interface{},
 	intermediateStringMap,
 	mapSetterMode string,
-	formats []string) string {
+	formats []string) (string, []interface{}) {
+
 	var newSql string
+	var valueStmts []interface{}
+	var valueStmt interface{}
 
 	valueOfContext := reflect.ValueOf(context)
 
@@ -61,7 +64,8 @@ func analyseSliceContext(context interface{},
 			}
 			switch mapSetterMode {
 			case "space":
-				newSql = analyseSpaceModeFromSlice(newSql, valueOfContext.Index(i).Interface(), formats)
+				newSql, valueStmt = analyseSpaceModeFromSlice(newSql, valueOfContext.Index(i).Interface(), formats)
+				putStmtToASlice(valueStmts, valueStmt)
 			}
 
 			if 0 <= i && i <= (valueOfContext.Len()-2) &&
@@ -71,19 +75,41 @@ func analyseSliceContext(context interface{},
 		}
 	}
 
-	return newSql
+	return newSql, valueStmts
+}
+
+func putStmtToASlice(slice []interface{}, stmt interface{}) {
+	if stmt == nil {
+		return
+	}
+
+	reflectValueOfStmt := reflect.ValueOf(stmt)
+
+	if !reflectValueOfStmt.IsZero() {
+		if reflectValueOfStmt.Type().Kind() == reflect.Slice {
+			for i := 0; i < reflectValueOfStmt.Len()-1; i++ {
+				if !reflectValueOfStmt.Index(i).IsZero() {
+					slice = append(slice, reflectValueOfStmt.Index(i).Interface())
+				}
+			}
+		} else {
+			slice = append(slice, stmt)
+		}
+	}
 }
 
 func analyseMapStringInterfaceContext(context interface{},
 	intermediateStringMap,
 	mapSetterMode string,
-	formats []string) string {
+	formats []string) (string, []interface{}) {
 
 	var effectiveFormat []string
 	var newSql string
 	var keySplit []string
 	var columnName string
 	var comparative string
+	var valueStmts []interface{}
+	var valueStmt interface{}
 
 	var i int
 	for key, value := range context.(map[string]interface{}) {
@@ -116,11 +142,14 @@ func analyseMapStringInterfaceContext(context interface{},
 
 		switch mapSetterMode {
 		case "setter":
-			newSql = analyseSetterMode(newSql, columnName, value, comparative, effectiveFormat)
+			newSql, valueStmt = analyseSetterMode(newSql, columnName, value, comparative, effectiveFormat)
+			putStmtToASlice(valueStmts, valueStmt)
 		case "aggregate":
-			newSql = analyseAggregateMode(newSql, columnName, value, comparative, effectiveFormat)
+			newSql, valueStmt = analyseAggregateMode(newSql, columnName, value, comparative, effectiveFormat)
+			putStmtToASlice(valueStmts, valueStmt)
 		case "space":
-			newSql = analyseSpaceModeFromMap(newSql, columnName, value, effectiveFormat)
+			newSql, valueStmt = analyseSpaceModeFromMap(newSql, columnName, value, effectiveFormat)
+			putStmtToASlice(valueStmts, valueStmt)
 		default:
 			panic("undefined mode")
 		}
@@ -131,154 +160,123 @@ func analyseMapStringInterfaceContext(context interface{},
 		}
 		i++
 	}
-	return newSql
+	return newSql, valueStmts
 }
 
-func analyseSetterMode(sql, columnName string, value interface{}, comparative string, formats []string) string {
-	var newSql string
+func analyseSetterMode(sql, columnName string, value interface{}, comparative string, formats []string) (string, interface{}) {
 	var checkSlice = false
 
 	switch value.(type) {
 	case string:
 		if value.(string) == "Now()" {
-			newSql = fmt.Sprintf(formats[1], sql, columnName, "Now()")
+			return fmt.Sprintf(formats[0], sql, columnName, value.(string)), nil
 		} else {
-			newSql = fmt.Sprintf(formats[0], sql, columnName, value.(string))
+			return fmt.Sprintf(formats[0], sql, columnName, "?"), value.(string)
 		}
 	case int:
-		fmt.Println(formats[1])
-		newSql = fmt.Sprintf(formats[1], sql, columnName, value.(int))
-		fmt.Println(newSql)
+		return fmt.Sprintf(formats[0], sql, columnName, "?"), value.(int)
 	case bool:
-		newSql = fmt.Sprintf(formats[1], sql, columnName, value.(bool))
+		return fmt.Sprintf(formats[0], sql, columnName, "?"), value.(bool)
 	case nil:
-		newSql = fmt.Sprintf(formats[1], sql, columnName, "NULL")
+		formats[0] = strings.Replace(formats[0], "=", "IS", 1)
+		return fmt.Sprintf(formats[0], sql, columnName, "NULL"), nil
 	default:
 		checkSlice = true
 	}
 
-	if checkSlice {
+	if checkSlice && comparative == "IN" {
 		valueOfValue := reflect.ValueOf(value)
-
 		if valueOfValue.Type().Kind() == reflect.Slice {
-			if comparative == "IN" {
-				newSql = fmt.Sprintf(formats[2], sql, columnName, putIntermediateString(
-					",",
-					"space",
-					valueOfValue.Interface()))
-			} else {
-				panic("incompatible comparative")
-			}
-		} else {
-			panic("unsupported/wrong value type from setter")
+			str, stmts := ContructStatement(",", "space", valueOfValue.Interface())
+			return fmt.Sprintf(formats[1], sql, columnName, str), stmts
 		}
 	}
 
-	return newSql
+	panic("unsupported/wrong value type from setter")
 }
 
-func analyseAggregateMode(sql,
-	aggregateFunction string,
-	value interface{},
-	comparative string,
-	formats []string) string {
-	var newSql string
+func analyseAggregateMode(sql, aggregateFunction string, value interface{}, comparative string, formats []string) (string, interface{}) {
+	if _, ok := value.(string); ok {
+		return fmt.Sprintf(formats[0], sql, aggregateFunction, "?"), value.(string)
+	} else {
+		valueOfValue := reflect.ValueOf(value)
+		if valueOfValue.Type().Kind() == reflect.Slice && valueOfValue.Len() == 2 {
+			columnName := valueOfValue.Index(0).Interface().(string)
+			vToCompare := valueOfValue.Index(1).Interface()
+			checkSlice := false
+			switch vToCompare.(type) {
+			case int:
+				return fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, "?"), vToCompare.(int)
+			case nil:
+				if comparative == "=" {
+					formats[1] = strings.Replace(formats[1], "=", "IS", 1)
+				}
+				return fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, "NULL"), nil
+			case string:
+				return fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, "?"), vToCompare.(string)
+			default:
+				checkSlice = true
+			}
 
-	switch value.(type) {
-	case string:
-		newSql = fmt.Sprintf(formats[0], sql, aggregateFunction, value.(string))
-	case map[string]interface{}:
-		if len(value.(map[string]interface{})) == 1 {
-			for columnName, vToCompare := range value.(map[string]interface{}) {
-				switch vToCompare.(type) {
-				case int:
-					newSql = fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, vToCompare.(int))
-				case nil:
-					newSql = fmt.Sprintf(formats[1], sql, aggregateFunction, columnName, "NULL")
-				case string:
-					newSql = fmt.Sprintf(formats[2], sql, aggregateFunction, columnName, vToCompare.(string))
-				case []string:
-					if comparative == "IN" {
-						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
-							",",
-							"space",
-							vToCompare.([]string)))
-					} else {
-						panic("incompatible comparative")
-					}
-				case []int:
-					if comparative == "IN" {
-						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
-							",",
-							"space",
-							vToCompare.([]int)))
-					} else {
-						panic("incompatible comparative")
-					}
+			if comparative == "IN" && checkSlice {
+				valueOfVToCompare := reflect.ValueOf(vToCompare)
+				if valueOfVToCompare.Type().Kind() == reflect.Slice {
+					str, stmts := ContructStatement(",", "space", valueOfVToCompare.Interface())
+					return fmt.Sprintf(formats[1], sql, columnName, str), stmts
 				}
 			}
-		} else {
-			panic("undefined configuration value")
 		}
-	default:
-		panic("undefined type from aggregate")
 	}
 
-	return newSql
+	panic("Wrong configuration")
 }
 
-func analyseSpaceModeFromMap(sql,
-	columnName string,
-	value interface{},
-	formats []string) string {
-	var newSql string
+func analyseSpaceModeFromMap(sql, columnName string, value interface{}, formats []string) (string, interface{}) {
 	switch value.(type) {
 	case string:
 		if value == "" {
-			newSql = fmt.Sprintf(formats[2], sql, columnName)
+			return fmt.Sprintf(formats[1], sql, columnName), nil
 		} else {
-			newSql = fmt.Sprintf(formats[0], sql, columnName, value)
+			return fmt.Sprintf(formats[0], sql, columnName, value.(string)), nil
 		}
 	default:
 		panic("undefined type from space")
 	}
-	return newSql
 }
 
 func analyseSpaceModeFromSlice(sql,
 	value interface{},
-	formats []string) string {
-	var newSql string
+	formats []string) (string, interface{}) {
 	switch value.(type) {
 	case string:
-		if value.(string) == "Now()" {
-			newSql = fmt.Sprintf(formats[2], sql, "Now()")
-		} else {
-			newSql = fmt.Sprintf(formats[1], sql, value.(string))
+		switch value.(string) {
+		case "Now()":
+			return fmt.Sprintf(formats[1], sql, "Now()"), nil
+		default:
+			return fmt.Sprintf(formats[1], sql, "?"), value.(string)
 		}
 	case nil:
-		newSql = fmt.Sprintf(formats[2], sql, "NULL")
+		return fmt.Sprintf(formats[1], sql, "NULL"), nil
 	case int:
-		newSql = fmt.Sprintf(formats[2], sql, value.(int))
+		return fmt.Sprintf(formats[1], sql, "?"), value.(int)
 	default:
 		panic("undefined type from space")
 	}
-	return newSql
 }
 
-func putIntermediateString(intermediateStringMap string,
+func ContructStatement(intermediateStringMap string,
 	mapSetterMode string,
-	context interface{}) string {
+	context interface{}) (string, []interface{}) {
 
 	var formats = make([]string, 0)
 
 	switch mapSetterMode {
 	case "setter":
-		formats = []string{".. %v '.'", ".. %v .", ".. %v (.)"}
+		formats = []string{".. %v .", ".. %v (.)"}
 	case "space":
-		formats = []string{"%v%v %v", "%v'%v'", "%v%v"}
+		formats = []string{"%v%v %v", "%v%v"}
 	case "aggregate":
-		formats = []string{"..(.)", "..(.) %v .", "..(.) %v '.'", "..(.) %v (.)"}
+		formats = []string{"..(.)", "..(.) %v .", "..(.) %v (.)"}
 	default:
 		panic("undefined mode from map")
 	}
@@ -286,7 +284,7 @@ func putIntermediateString(intermediateStringMap string,
 	switch context.(type) {
 	case map[string]interface{}:
 		return analyseMapStringInterfaceContext(context, intermediateStringMap, mapSetterMode, formats)
-	case []string, []int, interface{}:
+	case []string, []int:
 		return analyseSliceContext(context, intermediateStringMap, mapSetterMode, formats)
 	default:
 		panic("undefined context type")

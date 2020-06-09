@@ -12,6 +12,7 @@ import (
 type InsertQueryBuilder struct {
 	referenceModel interface{}
 	modelValues    []interface{}
+	stmt           []interface{}
 }
 
 var singletonIQueryBuilder *InsertQueryBuilder
@@ -46,7 +47,12 @@ func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelV
 			}
 		}
 	}
-	return fmt.Sprintf("(%v)", putIntermediateString(",", "space", listToInsert))
+
+	var str string
+	var stmt []interface{}
+	str, stmt = ContructStatement(",", "space", listToInsert)
+	insertQueryBuilder.stmt = append(insertQueryBuilder.stmt, stmt...)
+	return fmt.Sprintf("(%v)", str)
 }
 
 func (insertQueryBuilder *InsertQueryBuilder) getSQlValuesToInsert() string {

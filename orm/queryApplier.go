@@ -57,7 +57,6 @@ func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool
 		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
 			relationship.(*ManyToOneRelationShip).Target)
 		result = true
-
 	case *OneToManyRelationShip:
 		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
 			relationship.(*OneToManyRelationShip).Target)

@@ -8,18 +8,31 @@ import (
 
 type SelectQueryBuilder struct {
 	QueryApplier
-	SectionSelect    string
-	SectionAggregate string
+	SectionSelect     string
+	SectionSelectStmt []interface{}
+
+	SectionAggregate     string
+	SectionAggregateStmt []interface{}
+
 	SectionWhere     string
+	SectionWhereStmt []interface{}
+
 	SectionOrder     string
-	SectionFrom      string
-	SectionLimit     string
-	SectionOffset    string
-	SectionJoin      []string
-	SectionGroupBy   string
-	SectionHaving    string
-	rollUp           bool
-	root             bool
+	SectionOrderStmt []interface{}
+
+	SectionFrom   string
+	SectionLimit  string
+	SectionOffset string
+
+	SectionJoin []string
+
+	SectionGroupBy     string
+	SectionGroupByStmt []interface{}
+
+	SectionHaving     string
+	SectionHavingStmt []interface{}
+
+	RollUp bool
 }
 
 var singletonSQueryBuilder *SelectQueryBuilder
@@ -46,7 +59,7 @@ func (selectQueryBuilder *SelectQueryBuilder) ConstructSql() string {
 	}
 
 	var withRollUp string
-	if selectQueryBuilder.rollUp {
+	if selectQueryBuilder.RollUp {
 		withRollUp = " WITH ROLLUP"
 	}
 
@@ -123,10 +136,12 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", putIntermediateString(
+	var str string
+	str, selectQueryBuilder.SectionOrderStmt = ContructStatement(
 		",",
 		"space",
-		orderFilter))
+		orderFilter)
+	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", str)
 
 	return selectQueryBuilder
 }
@@ -142,10 +157,12 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
+	var str string
+	str, selectQueryBuilder.SectionWhereStmt = ContructStatement(
 		" and",
 		"setter",
-		mapFilter))
+		mapFilter)
+	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", str)
 
 	return selectQueryBuilder
 }
@@ -157,16 +174,20 @@ func (selectQueryBuilder *SelectQueryBuilder) SetModel(model interface{}) {
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Clean() {
-	selectQueryBuilder.SectionOffset = ""
-	selectQueryBuilder.SectionLimit = ""
-	selectQueryBuilder.SectionOrder = ""
-	selectQueryBuilder.SectionWhere = ""
-	selectQueryBuilder.SectionFrom = ""
-	selectQueryBuilder.SectionSelect = ""
-	selectQueryBuilder.SectionAggregate = ""
-	selectQueryBuilder.SectionGroupBy = ""
-	selectQueryBuilder.SectionHaving = ""
-	selectQueryBuilder.rollUp = false
+	reflectQueryBuilder := reflect.ValueOf(selectQueryBuilder).Elem()
+
+	for i := 0; i < reflectQueryBuilder.NumField(); i++ {
+		switch reflectQueryBuilder.Field(i).Kind() {
+		case reflect.String:
+			reflectQueryBuilder.Field(i).SetString("")
+		case reflect.Slice:
+			reflectQueryBuilder.Field(i).SetLen(0)
+			reflectQueryBuilder.Field(i).SetCap(0)
+			reflectQueryBuilder.Field(i).Set(reflect.Zero(reflectQueryBuilder.Type().Field(i).Type))
+		case reflect.Bool:
+			reflectQueryBuilder.Field(i).SetBool(false)
+		}
+	}
 	selectQueryBuilder.QueryApplier.Clean()
 }
 
@@ -189,8 +210,9 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
-	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
-		putIntermediateString(",", "space", columns))
+	var str string
+	str, selectQueryBuilder.SectionGroupByStmt = ContructStatement(",", "space", columns)
+	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v", str)
 
 	return selectQueryBuilder
 }
@@ -198,28 +220,28 @@ func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQ
 func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
 	selectQueryBuilder.columns = columns
 
-	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v",
-		putIntermediateString(",", "space", columns))
+	var str string
+	str, selectQueryBuilder.SectionSelectStmt = ContructStatement(",", "space", columns)
+	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v", str)
 
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.aggregates = make([]string, 0)
-
-	for key := range aggregateMap {
-		selectQueryBuilder.aggregates = append(selectQueryBuilder.aggregates, key)
-	}
-
-	selectQueryBuilder.SectionAggregate = putIntermediateString(
-		",", "aggregate", aggregateMap)
+func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateslice []string) *SelectQueryBuilder {
+	selectQueryBuilder.aggregates = aggregateslice
+	var str string
+	str, selectQueryBuilder.SectionAggregateStmt = ContructStatement(
+		",", "aggregate", aggregateslice)
+	selectQueryBuilder.SectionAggregate = str
 
 	return selectQueryBuilder
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", putIntermediateString(
-		",", "aggregate", aggregateMap))
+	var str string
+	str, selectQueryBuilder.SectionHavingStmt = ContructStatement(
+		",", "aggregate", aggregateMap)
+	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", str)
 
 	return selectQueryBuilder
 }
@@ -294,15 +316,9 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned,
 	return modelsList, err
 }
 
-func GetSubSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
-	subSQueryBuilder := &SelectQueryBuilder{root: false}
-	subSQueryBuilder.SetModel(model)
-	return subSQueryBuilder
-}
-
 func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
 	if singletonIQueryBuilder == nil {
-		singletonSQueryBuilder = &SelectQueryBuilder{root: true}
+		singletonSQueryBuilder = &SelectQueryBuilder{}
 	}
 
 	singletonSQueryBuilder.SetModel(model)

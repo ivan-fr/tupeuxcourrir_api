@@ -7,8 +7,9 @@ import (
 )
 
 type DeleteQueryBuilder struct {
-	referenceModel interface{}
-	SectionWhere   string
+	referenceModel   interface{}
+	SectionWhere     string
+	SectionWhereStmt []interface{}
 }
 
 var singletonDQueryBuilder *DeleteQueryBuilder
@@ -29,10 +30,12 @@ func (deleteQueryBuilder *DeleteQueryBuilder) ConstructSql() string {
 }
 
 func (deleteQueryBuilder *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
-	deleteQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
+	var str string
+	str, deleteQueryBuilder.SectionWhereStmt = ContructStatement(
 		" and",
 		"setter",
-		mapFilter))
+		mapFilter)
+	deleteQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", str)
 
 	return deleteQueryBuilder
 }

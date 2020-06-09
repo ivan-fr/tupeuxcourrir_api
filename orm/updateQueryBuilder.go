@@ -10,9 +10,12 @@ import (
 )
 
 type UpdateQueryBuilder struct {
-	referenceModel interface{}
-	SectionWhere   string
+	referenceModel   interface{}
+	SectionWhere     string
+	SectionWhereStmt []interface{}
+
 	SectionSet     string
+	SectionSetStmt []interface{}
 }
 
 var singletonUQueryBuilder *UpdateQueryBuilder
@@ -40,10 +43,12 @@ func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 		}
 	}
 
-	updateQueryBuilder.SectionSet = fmt.Sprintf("SET %v", putIntermediateString(
+	var str string
+	str, updateQueryBuilder.SectionSetStmt = ContructStatement(
 		",",
 		"setter",
-		mapFilter))
+		mapFilter)
+	updateQueryBuilder.SectionSet = fmt.Sprintf("SET %v", str)
 }
 
 func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
@@ -67,10 +72,12 @@ func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
 }
 
 func (updateQueryBuilder *UpdateQueryBuilder) Where(mapFilter map[string]interface{}) *UpdateQueryBuilder {
-	updateQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
+	var str string
+	str, updateQueryBuilder.SectionWhereStmt = ContructStatement(
 		" and",
 		"setter",
-		mapFilter))
+		mapFilter)
+	updateQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", str)
 
 	return updateQueryBuilder
 }
