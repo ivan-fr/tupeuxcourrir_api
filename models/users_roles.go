@@ -12,8 +12,8 @@ type UsersRole struct {
 
 func NewUsersRole() *UsersRole {
 	usersRoles := UsersRole{}
-	usersRoles.User = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "Users_idUser"}
-	usersRoles.Role = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "Roles_idRoles"}
+	usersRoles.User = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "UsersIdUser"}
+	usersRoles.Role = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "RolesIdRole"}
 
 	return &usersRoles
 }

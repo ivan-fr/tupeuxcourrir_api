@@ -18,8 +18,8 @@ type Message struct {
 
 func NewMessage() *Message {
 	message := Message{}
-	message.User = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "User_idUser"}
-	message.Thread = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "Thread_idThread"}
+	message.User = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "UserIdUser"}
+	message.Thread = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "ThreadIdThread"}
 
 	return &message
 }

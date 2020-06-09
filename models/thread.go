@@ -21,8 +21,8 @@ func NewThread() *Thread {
 	message := NewMessage()
 
 	thread := Thread{}
-	thread.InitiatorThread = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "initiator_thread_idUser"}
-	thread.ReceiverThread = &orm.ManyToOneRelationShip{Target: &Thread{}, AssociateColumn: "receiver_thread_idUser"}
+	thread.InitiatorThread = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "InitiatorThreadIdUser"}
+	thread.ReceiverThread = &orm.ManyToOneRelationShip{Target: &Thread{}, AssociateColumn: "ReceiverThreadIdUser"}
 	thread.Messages = &orm.OneToManyRelationShip{Target: message, FieldMTO: "Thread"}
 	return &thread
 }
