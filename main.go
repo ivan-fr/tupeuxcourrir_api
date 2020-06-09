@@ -18,4 +18,5 @@ func main() {
 		Consider("Roles").
 		OrderBy(map[string]interface{}{"bibi": "", "lolo": "DESC", "palopalo": "DESC"})
 	fmt.Println(sQueryBuilder.ConstructSql())
+	fmt.Println(sQueryBuilder.GetStmts())
 }

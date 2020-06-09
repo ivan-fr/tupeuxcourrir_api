@@ -67,7 +67,7 @@ func analyseSliceContext(context interface{},
 			case "space":
 				if stmts {
 					newSql, valueStmt = analyseSpaceModeFromSlice(newSql, valueOfContext.Index(i).Interface(), formats)
-					putStmtToASlice(valueStmts, valueStmt)
+					putStmtToASlice(&valueStmts, valueStmt)
 				} else {
 					newSql = analyseSpaceModeFromSliceNoStmt(newSql, valueOfContext.Index(i).Interface(), formats)
 				}
@@ -83,7 +83,7 @@ func analyseSliceContext(context interface{},
 	return newSql, valueStmts
 }
 
-func putStmtToASlice(slice []interface{}, stmt interface{}) {
+func putStmtToASlice(slice *[]interface{}, stmt interface{}) {
 	if stmt == nil {
 		return
 	}
@@ -94,11 +94,11 @@ func putStmtToASlice(slice []interface{}, stmt interface{}) {
 		if reflectValueOfStmt.Type().Kind() == reflect.Slice {
 			for i := 0; i < reflectValueOfStmt.Len()-1; i++ {
 				if !reflectValueOfStmt.Index(i).IsZero() {
-					slice = append(slice, reflectValueOfStmt.Index(i).Interface())
+					*slice = append(*slice, reflectValueOfStmt.Index(i).Interface())
 				}
 			}
 		} else {
-			slice = append(slice, stmt)
+			*slice = append(*slice, stmt)
 		}
 	}
 }
@@ -148,13 +148,13 @@ func analyseMapStringInterfaceContext(context interface{},
 		switch mapSetterMode {
 		case "setter":
 			newSql, valueStmt = analyseSetterMode(newSql, columnName, value, comparative, effectiveFormat)
-			putStmtToASlice(valueStmts, valueStmt)
+			putStmtToASlice(&valueStmts, valueStmt)
 		case "aggregate":
 			newSql, valueStmt = analyseAggregateMode(newSql, columnName, value, comparative, effectiveFormat)
-			putStmtToASlice(valueStmts, valueStmt)
+			putStmtToASlice(&valueStmts, valueStmt)
 		case "space":
 			newSql, valueStmt = analyseSpaceModeFromMap(newSql, columnName, value, effectiveFormat)
-			putStmtToASlice(valueStmts, valueStmt)
+			putStmtToASlice(&valueStmts, valueStmt)
 		default:
 			panic("undefined mode")
 		}
