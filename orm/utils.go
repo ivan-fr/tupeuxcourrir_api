@@ -130,15 +130,19 @@ func analyseMapStringInterfaceContext(context interface{},
 			columnName = keySplit[0]
 		}
 
+		effectiveFormat = make([]string, 0)
 		if mapSetterMode != "space" {
-			effectiveFormat = make([]string, 0)
 			for i := range formats {
 				if len(keySplit) == 1 {
 					comparative = getComparativeFormat("")
 				} else {
 					comparative = getComparativeFormat(keySplit[len(keySplit)-1])
 				}
-				effectiveFormat = append(effectiveFormat, fmt.Sprintf(formats[i], comparative))
+				if strings.Contains(formats[i], "%v") {
+					effectiveFormat = append(effectiveFormat, fmt.Sprintf(formats[i], comparative))
+				} else {
+					effectiveFormat = append(effectiveFormat, formats[i])
+				}
 				effectiveFormat[i] = strings.ReplaceAll(effectiveFormat[i], ".", "%v")
 			}
 		} else {
@@ -202,7 +206,7 @@ func analyseSetterMode(sql, columnName string, value interface{}, comparative st
 
 func analyseAggregateMode(sql, aggregateFunction string, value interface{}, comparative string, formats []string) (string, interface{}) {
 	if _, ok := value.(string); ok {
-		return fmt.Sprintf(formats[0], sql, aggregateFunction, "?"), value.(string)
+		return fmt.Sprintf(formats[0], sql, aggregateFunction, value.(string)), nil
 	} else {
 		valueOfValue := reflect.ValueOf(value)
 		if valueOfValue.Type().Kind() == reflect.Slice && valueOfValue.Len() == 2 {

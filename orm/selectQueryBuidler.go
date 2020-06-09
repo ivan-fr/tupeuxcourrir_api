@@ -233,11 +233,11 @@ func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQu
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateSlice []string) *SelectQueryBuilder {
-	selectQueryBuilder.aggregates = aggregateSlice
+func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
+	selectQueryBuilder.aggregates = aggregateMap
 	var str string
 	str, selectQueryBuilder.SectionAggregateStmt = ConstructSQlStmts(
-		",", "aggregate", aggregateSlice)
+		",", "aggregate", aggregateMap)
 	selectQueryBuilder.SectionAggregate = str
 
 	return selectQueryBuilder
@@ -274,8 +274,8 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryToSlice() (map[string]in
 		i++
 	}
 
-	for _, value := range selectQueryBuilder.aggregates {
-		mapColumnsResult[value] = columnsResult[i]
+	for key := range selectQueryBuilder.aggregates {
+		mapColumnsResult[key] = columnsResult[i]
 		i++
 	}
 
