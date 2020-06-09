@@ -162,7 +162,7 @@ func analyseSetterMode(sql, columnName string, value interface{}, comparative st
 
 		if valueOfValue.Type().Kind() == reflect.Slice {
 			if comparative == "IN" {
-				newSql = fmt.Sprintf(formats[2], sql, columnName, PutIntermediateString(
+				newSql = fmt.Sprintf(formats[2], sql, columnName, putIntermediateString(
 					",",
 					"space",
 					valueOfValue.Interface()))
@@ -199,7 +199,7 @@ func analyseAggregateMode(sql,
 					newSql = fmt.Sprintf(formats[2], sql, aggregateFunction, columnName, vToCompare.(string))
 				case []string:
 					if comparative == "IN" {
-						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, PutIntermediateString(
+						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
 							",",
 							"space",
 							vToCompare.([]string)))
@@ -208,7 +208,7 @@ func analyseAggregateMode(sql,
 					}
 				case []int:
 					if comparative == "IN" {
-						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, PutIntermediateString(
+						newSql = fmt.Sprintf(formats[3], sql, aggregateFunction, columnName, putIntermediateString(
 							",",
 							"space",
 							vToCompare.([]int)))
@@ -235,7 +235,7 @@ func analyseSpaceModeFromMap(sql,
 	switch value.(type) {
 	case string:
 		if value == "" {
-			panic("use a slice of your keys")
+			newSql = fmt.Sprintf(formats[2], sql, columnName)
 		} else {
 			newSql = fmt.Sprintf(formats[0], sql, columnName, value)
 		}
@@ -266,7 +266,7 @@ func analyseSpaceModeFromSlice(sql,
 	return newSql
 }
 
-func PutIntermediateString(intermediateStringMap string,
+func putIntermediateString(intermediateStringMap string,
 	mapSetterMode string,
 	context interface{}) string {
 

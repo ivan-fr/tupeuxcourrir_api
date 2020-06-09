@@ -29,7 +29,7 @@ func (deleteQueryBuilder *DeleteQueryBuilder) ConstructSql() string {
 }
 
 func (deleteQueryBuilder *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
-	deleteQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", PutIntermediateString(
+	deleteQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
 		" and",
 		"setter",
 		mapFilter))

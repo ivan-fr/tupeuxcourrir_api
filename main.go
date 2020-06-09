@@ -3,14 +3,19 @@ package main
 import (
 	"fmt"
 	"tupeuxcourrir_api/db"
+	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 )
 
 func main() {
 	defer db.DeferClose()
+	defer db.DeferClose()
 
-	s := orm.PutIntermediateString(",", "setter",
-		map[string]interface{}{"COUNT__in": []interface{}{"3", 5, "Now()", nil}, "lol__lte": "55"})
-
-	fmt.Printf("p%vp\n", s)
+	sQueryBuilder := orm.GetSelectQueryBuilder(models.NewUser()).
+		FindBy(map[string]interface{}{"id": "lol", "koko": "popo", "giro": nil}).
+		Consider("InitiatedThread").
+		Consider("ReceivedThread").
+		Consider("Roles").
+		OrderBy(map[string]interface{}{"bibi": "", "lolo": "DESC", "palopalo": "DESC"})
+	fmt.Println(sQueryBuilder.ConstructSql())
 }

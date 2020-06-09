@@ -28,7 +28,7 @@ func (selectQueryBuilder *SelectQueryBuilder) getAlias(tableName string) string 
 	return fmt.Sprintf("%v%v", tableName[0:2], len(selectQueryBuilder.relationshipTargetOrder))
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) constructSql() string {
+func (selectQueryBuilder *SelectQueryBuilder) ConstructSql() string {
 	switch {
 	case selectQueryBuilder.SectionSelect == "" && selectQueryBuilder.SectionAggregate == "":
 		selectQueryBuilder.SectionSelect = "SELECT *"
@@ -123,7 +123,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{})
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", PutIntermediateString(
+	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", putIntermediateString(
 		",",
 		"space",
 		orderFilter))
@@ -142,7 +142,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", PutIntermediateString(
+	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", putIntermediateString(
 		" and",
 		"setter",
 		mapFilter))
@@ -190,7 +190,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 
 func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
 	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
-		PutIntermediateString(",", "space", columns))
+		putIntermediateString(",", "space", columns))
 
 	return selectQueryBuilder
 }
@@ -199,7 +199,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQu
 	selectQueryBuilder.columns = columns
 
 	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v",
-		PutIntermediateString(",", "space", columns))
+		putIntermediateString(",", "space", columns))
 
 	return selectQueryBuilder
 }
@@ -211,14 +211,14 @@ func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]
 		selectQueryBuilder.aggregates = append(selectQueryBuilder.aggregates, key)
 	}
 
-	selectQueryBuilder.SectionAggregate = PutIntermediateString(
+	selectQueryBuilder.SectionAggregate = putIntermediateString(
 		",", "aggregate", aggregateMap)
 
 	return selectQueryBuilder
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", PutIntermediateString(
+	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", putIntermediateString(
 		",", "aggregate", aggregateMap))
 
 	return selectQueryBuilder
@@ -227,7 +227,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]int
 func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, error) {
 	defer selectQueryBuilder.Clean()
 	connection := db.GetConnectionFromDB()
-	row := connection.Db.QueryRow(selectQueryBuilder.constructSql())
+	row := connection.Db.QueryRow(selectQueryBuilder.ConstructSql())
 
 	var columnsResult = make([]interface{}, len(selectQueryBuilder.columns)+len(selectQueryBuilder.aggregates))
 
@@ -263,7 +263,7 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, 
 	defer selectQueryBuilder.Clean()
 
 	var modelsMatrix [][]*ModelsScanned
-	rows, err := connection.Db.Query(selectQueryBuilder.constructSql())
+	rows, err := connection.Db.Query(selectQueryBuilder.ConstructSql())
 
 	if err == nil {
 		var modelsList []*ModelsScanned
@@ -288,7 +288,7 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned,
 	connection := db.GetConnectionFromDB()
 	defer selectQueryBuilder.Clean()
 
-	row := connection.Db.QueryRow(selectQueryBuilder.constructSql())
+	row := connection.Db.QueryRow(selectQueryBuilder.ConstructSql())
 	modelsList, err := selectQueryBuilder.hydrate(row.Scan)
 
 	return modelsList, err

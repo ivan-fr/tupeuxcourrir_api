@@ -46,7 +46,7 @@ func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelV
 			}
 		}
 	}
-	return fmt.Sprintf("(%v)", PutIntermediateString(",", "space", listToInsert))
+	return fmt.Sprintf("(%v)", putIntermediateString(",", "space", listToInsert))
 }
 
 func (insertQueryBuilder *InsertQueryBuilder) getSQlValuesToInsert() string {
