@@ -7,7 +7,7 @@ type ModelsScanned struct {
 
 type QueryApplier struct {
 	model                   interface{}
-	relationshipTargetOrder []interface{}
+	relationshipTargetOrder map[string][]interface{}
 	columns                 []string
 	aggregates              map[string]interface{}
 }
@@ -17,23 +17,27 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 		{getModelName(queryApplier.model), newModel(queryApplier.model)},
 	}
 
-	var addrs []interface{}
+	var address []interface{}
 	addrFields, err := getAddrFieldsToScan(listModels[0].Model)
 
 	if err == nil {
-		for i, relationshipTarget := range queryApplier.relationshipTargetOrder {
-			listModels = append(listModels,
-				&ModelsScanned{getModelName(relationshipTarget),
-					newModel(relationshipTarget)})
-			addrs, err = getAddrFieldsToScan(listModels[i+1].Model)
-			addrFields = append(addrFields, addrs...)
+		i := 0
+		for _, relationshipTargets := range queryApplier.relationshipTargetOrder {
+			for _, relationshipTarget := range relationshipTargets {
+				listModels = append(listModels,
+					&ModelsScanned{getModelName(relationshipTarget),
+						newModel(relationshipTarget)})
+				address, err = getAddrFieldsToScan(listModels[i+1].Model)
+				addrFields = append(addrFields, address...)
 
-			if err != nil {
-				break
+				if err != nil {
+					break
+				}
+				i++
 			}
 		}
 
-		addrs = nil
+		address = nil
 
 		if err == nil {
 			err = scan(addrFields...)
@@ -43,31 +47,30 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 	return listModels, err
 }
 
-func (queryApplier *QueryApplier) addRelationship(relationship interface{}) bool {
-	result := false
+func (queryApplier *QueryApplier) addRelationship(fieldName string, relationship interface{}) bool {
+	result := true
 
 	switch relationship.(type) {
 	case *ManyToManyRelationShip:
-		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+		queryApplier.relationshipTargetOrder[fieldName] = append(queryApplier.relationshipTargetOrder[fieldName],
 			relationship.(*ManyToManyRelationShip).IntermediateTarget)
-		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+		queryApplier.relationshipTargetOrder[fieldName] = append(queryApplier.relationshipTargetOrder[fieldName],
 			relationship.(*ManyToManyRelationShip).Target)
-		result = true
 	case *ManyToOneRelationShip:
-		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+		queryApplier.relationshipTargetOrder[fieldName] = append(queryApplier.relationshipTargetOrder[fieldName],
 			relationship.(*ManyToOneRelationShip).Target)
-		result = true
 	case *OneToManyRelationShip:
-		queryApplier.relationshipTargetOrder = append(queryApplier.relationshipTargetOrder,
+		queryApplier.relationshipTargetOrder[fieldName] = append(queryApplier.relationshipTargetOrder[fieldName],
 			relationship.(*OneToManyRelationShip).Target)
-		result = true
+	default:
+		result = false
 	}
 
 	return result
 }
 
 func (queryApplier *QueryApplier) Clean() {
-	queryApplier.relationshipTargetOrder = make([]interface{}, 0)
+	queryApplier.relationshipTargetOrder = make(map[string][]interface{})
 	queryApplier.columns = make([]string, 0)
 	queryApplier.aggregates = make(map[string]interface{})
 }

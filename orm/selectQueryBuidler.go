@@ -35,8 +35,26 @@ type SelectQueryBuilder struct {
 
 var singletonSQueryBuilder *SelectQueryBuilder
 
-func (selectQueryBuilder *SelectQueryBuilder) getAlias(tableName string) string {
-	return fmt.Sprintf("%v%v", tableName[0:2], len(selectQueryBuilder.relationshipTargetOrder))
+func (selectQueryBuilder *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName string) string {
+	reflectValueOf := reflect.ValueOf(selectQueryBuilder.relationshipTargetOrder)
+	relationshipTargets := reflectValueOf.MapIndex(reflect.ValueOf(fieldRelationshipName))
+
+	var sliceIndex int
+
+	for i := 0; i < relationshipTargets.Len(); i++ {
+		if getModelName(relationshipTargets.Index(i).Interface()) == targetModelName {
+			sliceIndex = i + 1
+			break
+		}
+	}
+
+	if sliceIndex == 0 {
+		panic("undefined targetModelName in relationship")
+	}
+
+	return fmt.Sprintf("%v%v%v", getAbbreviation(fieldRelationshipName),
+		getAbbreviation(targetModelName),
+		sliceIndex)
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) ConstructSql() string {
@@ -84,20 +102,23 @@ func (selectQueryBuilder *SelectQueryBuilder) GetStmts() []interface{} {
 	return stmtsInterface
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) addMTO(fieldInterface interface{}) {
+func (selectQueryBuilder *SelectQueryBuilder) addMTO(fieldName string, fieldInterface interface{}) {
 	relationship := fieldInterface.(*ManyToOneRelationShip)
 	target := reflect.ValueOf(relationship.Target)
+
+	aliasTarget := selectQueryBuilder.getAlias(fieldName, target.Elem().Type().Name())
+
 	stringJoin := fmt.Sprintf("INNER JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(target.Elem().Type().Name()),
-		selectQueryBuilder.getAlias(getTableName(target.Elem().Type().Name())),
+		aliasTarget,
 		getTableName(getModelName(selectQueryBuilder.model)),
 		relationship.AssociateColumn,
-		selectQueryBuilder.getAlias(getTableName(target.Elem().Type().Name())),
+		aliasTarget,
 		getPKFieldNameFromModel(target.Interface()))
 	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) addOTM(fieldInterface interface{}) {
+func (selectQueryBuilder *SelectQueryBuilder) addOTM(fieldName string, fieldInterface interface{}) {
 	relationship := fieldInterface.(*OneToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target).Elem()
 
@@ -110,34 +131,39 @@ func (selectQueryBuilder *SelectQueryBuilder) addOTM(fieldInterface interface{})
 		targetAssociatedColumn = getAssociatedColumnFromReverse(selectQueryBuilder.model, target)
 	}
 
+	aliasTarget := selectQueryBuilder.getAlias(fieldName, target.Type().Name())
+
 	stringJoin := fmt.Sprintf("LEFT JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(target.Type().Name()),
-		selectQueryBuilder.getAlias(getTableName(target.Type().Name())),
+		aliasTarget,
 		getTableName(getModelName(selectQueryBuilder.model)),
 		getPKFieldNameFromModel(selectQueryBuilder.model),
-		selectQueryBuilder.getAlias(getTableName(target.Type().Name())),
+		aliasTarget,
 		targetAssociatedColumn)
 	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldInterface interface{}) {
+func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldName string, fieldInterface interface{}) {
 	relationship := fieldInterface.(*ManyToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target)
 	intermediateTarget := reflect.ValueOf(relationship.IntermediateTarget).Elem()
 
+	aliasIntermediateTarget := selectQueryBuilder.getAlias(fieldName, intermediateTarget.Type().Name())
+	aliasTarget := selectQueryBuilder.getAlias(fieldName, target.Elem().Type().Name())
+
 	stringJoin := fmt.Sprintf("LEFT JOIN %v %v ON %v.%v = %v.%v INNER JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(intermediateTarget.Type().Name()),
-		selectQueryBuilder.getAlias(getTableName(intermediateTarget.Type().Name())),
+		aliasIntermediateTarget,
 		getTableName(getModelName(selectQueryBuilder.model)),
 		getPKFieldNameFromModel(selectQueryBuilder.model),
-		selectQueryBuilder.getAlias(getTableName(intermediateTarget.Type().Name())),
+		aliasIntermediateTarget,
 		getAssociatedColumnFromReverse(selectQueryBuilder.model, intermediateTarget),
 
 		getTableName(target.Elem().Type().Name()),
-		selectQueryBuilder.getAlias(getTableName(target.Elem().Type().Name())),
-		selectQueryBuilder.getAlias(getTableName(intermediateTarget.Type().Name())),
+		aliasTarget,
+		aliasIntermediateTarget,
 		getAssociatedColumnFromReverse(target.Interface(), intermediateTarget),
-		selectQueryBuilder.getAlias(getTableName(target.Elem().Type().Name())),
+		aliasTarget,
 		getPKFieldNameFromModel(target.Interface()))
 	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
 }
@@ -202,14 +228,14 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 	reflectQueryBuilder := reflect.ValueOf(selectQueryBuilder.model).Elem()
 	fieldInterface := reflectQueryBuilder.FieldByName(fieldName).Interface()
 
-	if selectQueryBuilder.addRelationship(fieldInterface) {
+	if selectQueryBuilder.addRelationship(fieldName, fieldInterface) {
 		switch fieldInterface.(type) {
 		case *ManyToOneRelationShip:
-			selectQueryBuilder.addMTO(fieldInterface)
+			selectQueryBuilder.addMTO(fieldName, fieldInterface)
 		case *OneToManyRelationShip:
-			selectQueryBuilder.addOTM(fieldInterface)
+			selectQueryBuilder.addOTM(fieldName, fieldInterface)
 		case *ManyToManyRelationShip:
-			selectQueryBuilder.addMTM(fieldInterface)
+			selectQueryBuilder.addMTM(fieldName, fieldInterface)
 		}
 	}
 

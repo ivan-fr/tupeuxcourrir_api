@@ -5,7 +5,20 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 )
+
+func getAbbreviation(str string) string {
+	var abbr = make([]string, 0)
+
+	for _, char := range str {
+		if unicode.IsUpper(char) && unicode.IsLetter(char) {
+			abbr = append(abbr, fmt.Sprintf("%c", char))
+		}
+	}
+
+	return strings.Join(abbr, "")
+}
 
 func addPrefixToSections(queryBuilder interface{}, prefix string, startIndexStringField int) {
 	reflectQueryBuilder := reflect.ValueOf(queryBuilder).Elem()
