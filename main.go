@@ -27,7 +27,7 @@ func main() {
 	sQueryBuilder.Clean()
 
 	sQueryBuilder = sQueryBuilder.
-		Where(map[string]interface{}{"id": "lol", "koko": 9, "giro": nil}).
+		Where(map[string]interface{}{"id__in": []string{"kok", "teto", "polo", "giro", "maco"}, "koko": 9, "giro": nil}).
 		Aggregate(map[string]interface{}{"COUNT": "*", "AVG": "IdUser"}).
 		Having(map[string]interface{}{"COUNT__lte": []interface{}{"*", 10}, "AVG__gt": []interface{}{"IdUser", 13}}).
 		Consider("InitiatedThread").

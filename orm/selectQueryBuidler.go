@@ -246,7 +246,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]
 func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
 	var str string
 	str, selectQueryBuilder.SectionHavingStmt = ConstructSQlStmts(
-		",", "aggregate", aggregateMap)
+		" and", "aggregate", aggregateMap)
 	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", str)
 
 	return selectQueryBuilder

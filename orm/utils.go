@@ -92,7 +92,7 @@ func putStmtToASlice(slice *[]interface{}, stmt interface{}) {
 
 	if !reflectValueOfStmt.IsZero() {
 		if reflectValueOfStmt.Type().Kind() == reflect.Slice {
-			for i := 0; i < reflectValueOfStmt.Len()-1; i++ {
+			for i := 0; i < reflectValueOfStmt.Len(); i++ {
 				if !reflectValueOfStmt.Index(i).IsZero() {
 					*slice = append(*slice, reflectValueOfStmt.Index(i).Interface())
 				}
