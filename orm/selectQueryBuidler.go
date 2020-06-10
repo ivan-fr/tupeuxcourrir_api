@@ -36,49 +36,63 @@ type SelectQueryBuilder struct {
 
 var singletonSQueryBuilder *SelectQueryBuilder
 
-func (selectQueryBuilder *SelectQueryBuilder) adaptColumnWithAlias(context interface{}, aggregate bool) {
+func (selectQueryBuilder *SelectQueryBuilder) adaptColumnWithAlias(stringToSplit string, ptrStringToUpdate *string) bool {
+	result := true
+	dotSplit := strings.Split(stringToSplit, ".")
+	switch len(dotSplit) {
+	case 3:
+		*ptrStringToUpdate = fmt.Sprintf("%v.%v",
+			selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
+			dotSplit[2])
+	case 2:
+		*ptrStringToUpdate = fmt.Sprintf("%v.%v",
+			selectQueryBuilder.getAlias(dotSplit[0], ""),
+			dotSplit[1])
+	default:
+		result = false
+	}
+
+	return result
+}
+
+func (selectQueryBuilder *SelectQueryBuilder) adaptContext(context interface{}, aggregate bool) {
 	switch context.(type) {
 	case []string:
 		sliceString := context.([]string)
 		for i, valueString := range sliceString {
-			if dotSplit := strings.Split(valueString, "."); len(dotSplit) == 3 {
-				sliceString[i] = fmt.Sprintf("%v.%v",
-					selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
-					dotSplit[2])
-			}
+			selectQueryBuilder.adaptColumnWithAlias(valueString, &valueString)
+			sliceString[i] = valueString
 		}
 	case map[string]interface{}:
 		mapStringInterface := context.(map[string]interface{})
+		var mapToMerge = make(map[string]interface{})
 
 		for key, aInterface := range mapStringInterface {
 
 			if aggregate {
 				switch aInterface.(type) {
 				case string:
-					if dotSplit := strings.Split(aInterface.(string), "."); len(dotSplit) == 3 {
-						mapStringInterface[key] = fmt.Sprintf("%v.%v",
-							selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
-							dotSplit[2])
-					}
+					theString := mapStringInterface[key].(string)
+					selectQueryBuilder.adaptColumnWithAlias(aInterface.(string), &theString)
+					mapStringInterface[key] = theString
 				case []interface{}:
 					theSlice := aInterface.([]interface{})
-					if dotSplit := strings.Split(theSlice[0].(string), "."); len(dotSplit) == 3 {
-						theSlice[0] = fmt.Sprintf("%v.%v",
-							selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
-							dotSplit[2])
-					}
+					theString := theSlice[0].(string)
+					selectQueryBuilder.adaptColumnWithAlias(theSlice[0].(string), &theString)
+					theSlice[0] = theString
 				}
 			} else {
 				var theKey string
 
-				if dotSplit := strings.Split(key, "."); len(dotSplit) == 3 {
-					theKey = fmt.Sprintf("%v.%v",
-						selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
-						dotSplit[2])
-					mapStringInterface[theKey] = mapStringInterface[key]
+				if selectQueryBuilder.adaptColumnWithAlias(key, &theKey) {
+					mapToMerge[theKey] = mapStringInterface[key]
 					delete(mapStringInterface, key)
 				}
 			}
+		}
+
+		for key, aInterface := range mapToMerge {
+			mapStringInterface[key] = aInterface
 		}
 	}
 }
@@ -89,10 +103,16 @@ func (selectQueryBuilder *SelectQueryBuilder) getAlias(fieldRelationshipName, ta
 
 	var sliceIndex int
 
-	for i := 0; i < relationshipTargets.Len(); i++ {
-		if getModelName(relationshipTargets.Index(i).Interface()) == targetModelName {
-			sliceIndex = i + 1
-			break
+	switch {
+	case 1 == relationshipTargets.Len() && targetModelName == "":
+		sliceIndex = 1
+		targetModelName = getModelName(relationshipTargets.Index(0).Interface())
+	case targetModelName != "":
+		for i := 0; i < relationshipTargets.Len(); i++ {
+			if getModelName(relationshipTargets.Index(i).Interface()) == targetModelName {
+				sliceIndex = i + 1
+				break
+			}
 		}
 	}
 
@@ -217,7 +237,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldName string, fieldInte
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptColumnWithAlias(orderFilter, false)
+	selectQueryBuilder.adaptContext(orderFilter, false)
 	var str string
 	str, _ = ConstructSQlStmts(
 		",",
@@ -239,7 +259,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Where(mapFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptColumnWithAlias(mapFilter, false)
+	selectQueryBuilder.adaptContext(mapFilter, false)
 
 	var str string
 	str, selectQueryBuilder.SectionWhereStmt = ConstructSQlStmts(
@@ -294,7 +314,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
-	selectQueryBuilder.adaptColumnWithAlias(columns, false)
+	selectQueryBuilder.adaptContext(columns, false)
 
 	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
 		ConstructSQlSpaceNoStmts(",", columns))
@@ -303,7 +323,7 @@ func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQ
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
-	selectQueryBuilder.adaptColumnWithAlias(columns, false)
+	selectQueryBuilder.adaptContext(columns, false)
 
 	selectQueryBuilder.columns = columns
 
@@ -315,7 +335,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQu
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptColumnWithAlias(aggregateMap, true)
+	selectQueryBuilder.adaptContext(aggregateMap, true)
 
 	selectQueryBuilder.aggregates = aggregateMap
 	var str string
@@ -327,7 +347,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptColumnWithAlias(aggregateMap, true)
+	selectQueryBuilder.adaptContext(aggregateMap, true)
 
 	var str string
 	str, selectQueryBuilder.SectionHavingStmt = ConstructSQlStmts(
