@@ -28,8 +28,10 @@ func GetConnectionFromDB() *Connection {
 }
 
 func DeferClose() {
-	connection := GetConnectionFromDB()
-	if err := connection.Db.Close(); err != nil {
-		fmt.Println(err)
+	if singletonConnector != nil {
+		connection := GetConnectionFromDB()
+		if err := connection.Db.Close(); err != nil {
+			fmt.Println(err)
+		}
 	}
 }

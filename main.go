@@ -9,10 +9,9 @@ import (
 
 func main() {
 	defer db.DeferClose()
-	defer db.DeferClose()
 
 	sQueryBuilder := orm.GetSelectQueryBuilder(models.NewUser()).
-		FindBy(map[string]interface{}{"id": "lol", "koko": 9, "giro": nil}).
+		Where(map[string]interface{}{"id": "lol", "koko": 9, "giro": nil}).
 		Aggregate(map[string]interface{}{"COUNT": "*", "AVG": "IdUser"}).
 		Having(map[string]interface{}{"COUNT__lte": []interface{}{"*", 10}, "AVG__gt": []interface{}{"IdUser", 13}}).
 		Consider("InitiatedThread").
@@ -28,7 +27,7 @@ func main() {
 	sQueryBuilder.Clean()
 
 	sQueryBuilder = sQueryBuilder.
-		FindBy(map[string]interface{}{"id": "lol", "koko": 9, "giro": nil}).
+		Where(map[string]interface{}{"id": "lol", "koko": 9, "giro": nil}).
 		Aggregate(map[string]interface{}{"COUNT": "*", "AVG": "IdUser"}).
 		Having(map[string]interface{}{"COUNT__lte": []interface{}{"*", 10}, "AVG__gt": []interface{}{"IdUser", 13}}).
 		Consider("InitiatedThread").

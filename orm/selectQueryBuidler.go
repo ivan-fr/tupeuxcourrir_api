@@ -163,7 +163,7 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) FindBy(mapFilter map[string]interface{}) *SelectQueryBuilder {
+func (selectQueryBuilder *SelectQueryBuilder) Where(mapFilter map[string]interface{}) *SelectQueryBuilder {
 	var str string
 	str, selectQueryBuilder.SectionWhereStmt = ConstructSQlStmts(
 		" and",
