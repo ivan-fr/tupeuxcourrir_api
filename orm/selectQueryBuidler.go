@@ -3,6 +3,7 @@ package orm
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"tupeuxcourrir_api/db"
 )
 
@@ -34,6 +35,53 @@ type SelectQueryBuilder struct {
 }
 
 var singletonSQueryBuilder *SelectQueryBuilder
+
+func (selectQueryBuilder *SelectQueryBuilder) adaptColumnWithAlias(context interface{}, aggregate bool) {
+	switch context.(type) {
+	case []string:
+		sliceString := context.([]string)
+		for i, valueString := range sliceString {
+			if dotSplit := strings.Split(valueString, "."); len(dotSplit) == 3 {
+				sliceString[i] = fmt.Sprintf("%v.%v",
+					selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
+					dotSplit[2])
+			}
+		}
+	case map[string]interface{}:
+		mapStringInterface := context.(map[string]interface{})
+
+		for key, aInterface := range mapStringInterface {
+
+			if aggregate {
+				switch aInterface.(type) {
+				case string:
+					if dotSplit := strings.Split(aInterface.(string), "."); len(dotSplit) == 3 {
+						mapStringInterface[key] = fmt.Sprintf("%v.%v",
+							selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
+							dotSplit[2])
+					}
+				case []interface{}:
+					theSlice := aInterface.([]interface{})
+					if dotSplit := strings.Split(theSlice[0].(string), "."); len(dotSplit) == 3 {
+						theSlice[0] = fmt.Sprintf("%v.%v",
+							selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
+							dotSplit[2])
+					}
+				}
+			} else {
+				var theKey string
+
+				if dotSplit := strings.Split(key, "."); len(dotSplit) == 3 {
+					theKey = fmt.Sprintf("%v.%v",
+						selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
+						dotSplit[2])
+					mapStringInterface[theKey] = mapStringInterface[key]
+					delete(mapStringInterface, key)
+				}
+			}
+		}
+	}
+}
 
 func (selectQueryBuilder *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName string) string {
 	reflectValueOf := reflect.ValueOf(selectQueryBuilder.relationshipTargetOrder)
@@ -169,6 +217,7 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldName string, fieldInte
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
+	selectQueryBuilder.adaptColumnWithAlias(orderFilter, false)
 	var str string
 	str, _ = ConstructSQlStmts(
 		",",
@@ -190,6 +239,8 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Where(mapFilter map[string]interface{}) *SelectQueryBuilder {
+	selectQueryBuilder.adaptColumnWithAlias(mapFilter, false)
+
 	var str string
 	str, selectQueryBuilder.SectionWhereStmt = ConstructSQlStmts(
 		" and",
@@ -243,6 +294,8 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
+	selectQueryBuilder.adaptColumnWithAlias(columns, false)
+
 	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
 		ConstructSQlSpaceNoStmts(",", columns))
 
@@ -250,6 +303,8 @@ func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQ
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
+	selectQueryBuilder.adaptColumnWithAlias(columns, false)
+
 	selectQueryBuilder.columns = columns
 
 	var str string
@@ -260,6 +315,8 @@ func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQu
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
+	selectQueryBuilder.adaptColumnWithAlias(aggregateMap, true)
+
 	selectQueryBuilder.aggregates = aggregateMap
 	var str string
 	str, selectQueryBuilder.SectionAggregateStmt = ConstructSQlStmts(
@@ -270,6 +327,8 @@ func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
+	selectQueryBuilder.adaptColumnWithAlias(aggregateMap, true)
+
 	var str string
 	str, selectQueryBuilder.SectionHavingStmt = ConstructSQlStmts(
 		" and", "aggregate", aggregateMap)
