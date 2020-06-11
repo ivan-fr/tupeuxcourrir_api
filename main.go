@@ -24,4 +24,10 @@ func main() {
 
 	fmt.Println(sQueryBuilder.ConstructSql())
 	fmt.Println(sQueryBuilder.GetStmts())
+
+	str, stmts := orm.XOr(map[string]interface{}{"Reo": "lol", "koko": 9, "giro": nil},
+		orm.And(map[string]interface{}{"Re": "loli", "kokoi": 63, "giro": nil})).
+		GetSentence("setter")
+
+	fmt.Println(str, stmts)
 }
