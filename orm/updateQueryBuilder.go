@@ -20,8 +20,8 @@ type UpdateQueryBuilder struct {
 
 var singletonUQueryBuilder *UpdateQueryBuilder
 
-func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
-	valueOfRef := reflect.ValueOf(updateQueryBuilder.referenceModel).Elem()
+func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
+	valueOfRef := reflect.ValueOf(uQB.referenceModel).Elem()
 	var mapFilter = make(map[string]interface{})
 
 	for i := 1; i < valueOfRef.NumField(); i++ {
@@ -43,60 +43,55 @@ func (updateQueryBuilder *UpdateQueryBuilder) getSetSectionFromRef() {
 		}
 	}
 
-	var str string
-	str, updateQueryBuilder.SectionSetStmt = constructSQlStmts(
-		",",
-		"setter",
-		mapFilter)
-	updateQueryBuilder.SectionSet = fmt.Sprintf("SET %v", str)
+	sSA := &SQLSectionArchitecture{mode: "setter", intermediateString: ",", context: mapFilter, isStmts: true}
+	sSA.constructSQlSection()
+	uQB.SectionSetStmt = sSA.valuesFromStmts
+	uQB.SectionSet = fmt.Sprintf("SET %v", sSA.SQLSection)
 }
 
-func (updateQueryBuilder *UpdateQueryBuilder) ConstructSql() string {
+func (uQB *UpdateQueryBuilder) ConstructSql() string {
 	var theSql = fmt.Sprintf("UPDATE %v",
-		getTableName(getModelName(updateQueryBuilder.referenceModel)))
+		getTableName(getModelName(uQB.referenceModel)))
 
-	if updateQueryBuilder.SectionWhere == "" {
+	if uQB.SectionWhere == "" {
 		panic("no where section")
 	}
 
-	if updateQueryBuilder.SectionSet == "" {
-		updateQueryBuilder.getSetSectionFromRef()
+	if uQB.SectionSet == "" {
+		uQB.getSetSectionFromRef()
 	}
 
-	addPrefixToSections(updateQueryBuilder, " ", 0)
+	addPrefixToSections(uQB, " ", 0)
 
 	return fmt.Sprintf("%v%v%v;",
 		theSql,
-		updateQueryBuilder.SectionSet,
-		updateQueryBuilder.SectionWhere)
+		uQB.SectionSet,
+		uQB.SectionWhere)
 }
 
-func (updateQueryBuilder *UpdateQueryBuilder) Where(mapFilter map[string]interface{}) *UpdateQueryBuilder {
+func (uQB *UpdateQueryBuilder) Where(logical *Logical) *UpdateQueryBuilder {
 	var str string
-	str, updateQueryBuilder.SectionWhereStmt = constructSQlStmts(
-		" and",
-		"setter",
-		mapFilter)
-	updateQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", str)
+	str, uQB.SectionWhereStmt = logical.GetSentence("setter")
+	uQB.SectionWhere = fmt.Sprintf("WHERE %v", str)
 
-	return updateQueryBuilder
+	return uQB
 }
 
-func (updateQueryBuilder *UpdateQueryBuilder) SetReferenceModel(model interface{}) *UpdateQueryBuilder {
-	updateQueryBuilder.Clean()
-	updateQueryBuilder.referenceModel = nil
-	updateQueryBuilder.referenceModel = model
-	return updateQueryBuilder
+func (uQB *UpdateQueryBuilder) SetReferenceModel(model interface{}) *UpdateQueryBuilder {
+	uQB.Clean()
+	uQB.referenceModel = nil
+	uQB.referenceModel = model
+	return uQB
 }
 
-func (updateQueryBuilder *UpdateQueryBuilder) Clean() {
-	updateQueryBuilder.SectionWhere = ""
-	updateQueryBuilder.SectionSet = ""
+func (uQB *UpdateQueryBuilder) Clean() {
+	uQB.SectionWhere = ""
+	uQB.SectionSet = ""
 }
 
-func (updateQueryBuilder *UpdateQueryBuilder) ApplyUpdate() (sql.Result, error) {
+func (uQB *UpdateQueryBuilder) ApplyUpdate() (sql.Result, error) {
 	connection := db.GetConnectionFromDB()
-	return connection.Db.Exec(updateQueryBuilder.ConstructSql())
+	return connection.Db.Exec(uQB.ConstructSql())
 }
 
 func GetUpdateQueryBuilder(model interface{}) *UpdateQueryBuilder {

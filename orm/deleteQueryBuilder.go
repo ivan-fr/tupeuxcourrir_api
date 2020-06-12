@@ -14,46 +14,45 @@ type DeleteQueryBuilder struct {
 
 var singletonDQueryBuilder *DeleteQueryBuilder
 
-func (deleteQueryBuilder *DeleteQueryBuilder) ConstructSql() string {
+func (dQB *DeleteQueryBuilder) ConstructSql() string {
 	var theSql = fmt.Sprintf("DELETE FROM %v",
-		getTableName(getModelName(deleteQueryBuilder.referenceModel)))
+		getTableName(getModelName(dQB.referenceModel)))
 
-	if deleteQueryBuilder.SectionWhere == "" {
+	if dQB.SectionWhere == "" {
 		panic("no where section")
 	}
 
-	addPrefixToSections(deleteQueryBuilder, " ", 0)
+	addPrefixToSections(dQB, " ", 0)
 
 	return fmt.Sprintf("%v%v;",
 		theSql,
-		deleteQueryBuilder.SectionWhere)
+		dQB.SectionWhere)
 }
 
-func (deleteQueryBuilder *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
-	var str string
-	str, deleteQueryBuilder.SectionWhereStmt = constructSQlStmts(
-		" and",
-		"setter",
-		mapFilter)
-	deleteQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", str)
+func (dQB *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
+	sSA := &SQLSectionArchitecture{mode: "setter", isStmts: true, intermediateString: " and", context: mapFilter}
+	sSA.constructSQlSection()
 
-	return deleteQueryBuilder
+	dQB.SectionWhereStmt = sSA.valuesFromStmts
+	dQB.SectionWhere = fmt.Sprintf("WHERE %v", sSA.SQLSection)
+
+	return dQB
 }
 
-func (deleteQueryBuilder *DeleteQueryBuilder) SetReferenceModel(model interface{}) *DeleteQueryBuilder {
-	deleteQueryBuilder.Clean()
-	deleteQueryBuilder.referenceModel = nil
-	deleteQueryBuilder.referenceModel = model
-	return deleteQueryBuilder
+func (dQB *DeleteQueryBuilder) SetReferenceModel(model interface{}) *DeleteQueryBuilder {
+	dQB.Clean()
+	dQB.referenceModel = nil
+	dQB.referenceModel = model
+	return dQB
 }
 
-func (deleteQueryBuilder *DeleteQueryBuilder) Clean() {
-	deleteQueryBuilder.SectionWhere = ""
+func (dQB *DeleteQueryBuilder) Clean() {
+	dQB.SectionWhere = ""
 }
 
-func (deleteQueryBuilder *DeleteQueryBuilder) ApplyDelete() (sql.Result, error) {
+func (dQB *DeleteQueryBuilder) ApplyDelete() (sql.Result, error) {
 	connection := db.GetConnectionFromDB()
-	return connection.Db.Exec(deleteQueryBuilder.ConstructSql())
+	return connection.Db.Exec(dQB.ConstructSql(), dQB.SectionWhereStmt...)
 }
 
 func GetDeleteQueryBuilder(model interface{}) *DeleteQueryBuilder {

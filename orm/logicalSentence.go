@@ -46,13 +46,22 @@ func (logical *Logical) GetSentence(mapSetterMode string) (string, []interface{}
 			stmts = append(stmts, stmtsPart...)
 			sentences = append(sentences, fmt.Sprintf("(%v)", str))
 		default:
-			str, stmtsPart := constructSQlStmts(logical.intermediateString, mapSetterMode, combination)
-			stmts = append(stmts, stmtsPart...)
-			sentences = append(sentences, str)
+			sSA := &SQLSectionArchitecture{intermediateString: logical.intermediateString,
+				isStmts: true,
+				mode:    mapSetterMode,
+				context: combination}
+			sSA.constructSQlSection()
+			stmts = append(stmts, sSA.valuesFromStmts...)
+			sentences = append(sentences, sSA.SQLSection)
 		}
 	}
 
-	return constructSQlSpaceNoStmts(logical.intermediateString, sentences), stmts
+	sSA := &SQLSectionArchitecture{intermediateString: logical.intermediateString,
+		isStmts: false,
+		mode:    "space",
+		context: sentences}
+	sSA.constructSQlSection()
+	return sSA.SQLSection, stmts
 }
 
 func Or(interfaces ...interface{}) *Logical {

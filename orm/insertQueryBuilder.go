@@ -17,7 +17,7 @@ type InsertQueryBuilder struct {
 
 var singletonIQueryBuilder *InsertQueryBuilder
 
-func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
+func (iQB *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
 	valueOfModel := reflect.ValueOf(modelValue).Elem()
 
 	var listToInsert = make([]interface{}, 0)
@@ -48,24 +48,24 @@ func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelV
 		}
 	}
 
-	var str string
-	var stmt []interface{}
-	str, stmt = constructSQlStmts(",", "space", listToInsert)
-	insertQueryBuilder.stmt = append(insertQueryBuilder.stmt, stmt...)
-	return fmt.Sprintf("(%v)", str)
+	sSA := &SQLSectionArchitecture{mode: "space", isStmts: true, intermediateString: ",", context: listToInsert}
+	sSA.constructSQlSection()
+
+	iQB.stmt = append(iQB.stmt, sSA.valuesFromStmts...)
+	return fmt.Sprintf("(%v)", sSA.SQLSection)
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) getSQlValuesToInsert() string {
+func (iQB *InsertQueryBuilder) getSQlValuesToInsert() string {
 	var theSql string
 
-	for i, modelValue := range insertQueryBuilder.modelValues {
+	for i, modelValue := range iQB.modelValues {
 
-		sectionValues := insertQueryBuilder.getSQLSectionValuesToInsert(modelValue)
+		sectionValues := iQB.getSQLSectionValuesToInsert(modelValue)
 
 		switch {
 		case 0 == i:
 			theSql = fmt.Sprintf("%v %v", theSql, sectionValues)
-		case 1 <= i && i <= (len(insertQueryBuilder.modelValues)-1):
+		case 1 <= i && i <= (len(iQB.modelValues)-1):
 			theSql = fmt.Sprintf("%v, %v", theSql, sectionValues)
 		}
 	}
@@ -73,8 +73,8 @@ func (insertQueryBuilder *InsertQueryBuilder) getSQlValuesToInsert() string {
 	return theSql
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) getSqlColumnNamesToInsert() string {
-	typeOfRef := reflect.ValueOf(insertQueryBuilder.referenceModel).Elem()
+func (iQB *InsertQueryBuilder) getSqlColumnNamesToInsert() string {
+	typeOfRef := reflect.ValueOf(iQB.referenceModel).Elem()
 
 	sectionColumn := "("
 	for i := 1; i < typeOfRef.NumField(); i++ {
@@ -95,35 +95,35 @@ func (insertQueryBuilder *InsertQueryBuilder) getSqlColumnNamesToInsert() string
 	return sectionColumn
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) constructSql() string {
-	if len(insertQueryBuilder.modelValues) == 0 {
+func (iQB *InsertQueryBuilder) constructSql() string {
+	if len(iQB.modelValues) == 0 {
 		return ""
 	}
 
 	var theSql = fmt.Sprintf("INSERT INTO %v %v VALUES",
-		getTableName(getModelName(insertQueryBuilder.referenceModel)),
-		insertQueryBuilder.getSqlColumnNamesToInsert())
+		getTableName(getModelName(iQB.referenceModel)),
+		iQB.getSqlColumnNamesToInsert())
 
 	return fmt.Sprintf("%v %v;",
 		theSql,
-		insertQueryBuilder.getSQlValuesToInsert())
+		iQB.getSQlValuesToInsert())
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) SetReferenceModel(model interface{}) *InsertQueryBuilder {
-	insertQueryBuilder.Clean()
-	insertQueryBuilder.referenceModel = nil
-	insertQueryBuilder.referenceModel = model
-	return insertQueryBuilder
+func (iQB *InsertQueryBuilder) SetReferenceModel(model interface{}) *InsertQueryBuilder {
+	iQB.Clean()
+	iQB.referenceModel = nil
+	iQB.referenceModel = model
+	return iQB
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) Clean() {
-	insertQueryBuilder.modelValues = nil
+func (iQB *InsertQueryBuilder) Clean() {
+	iQB.modelValues = nil
 }
 
-func (insertQueryBuilder *InsertQueryBuilder) ApplyInsert() (sql.Result, error) {
+func (iQB *InsertQueryBuilder) ApplyInsert() (sql.Result, error) {
 	connection := db.GetConnectionFromDB()
-	defer insertQueryBuilder.Clean()
-	return connection.Db.Exec(insertQueryBuilder.constructSql())
+	defer iQB.Clean()
+	return connection.Db.Exec(iQB.constructSql())
 }
 
 func GetInsertQueryBuilder(model interface{}, modelsValues []interface{}) *InsertQueryBuilder {

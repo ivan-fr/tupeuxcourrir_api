@@ -134,3 +134,22 @@ func getModelName(model interface{}) string {
 
 	return typeof.Name()
 }
+
+func getComparativeFormat(comparative string) string {
+	switch comparative {
+	case "":
+		return "="
+	case "in":
+		return "IN"
+	case "gt":
+		return ">"
+	case "gte":
+		return ">="
+	case "lt":
+		return "<"
+	case "lte":
+		return "<="
+	default:
+		panic("undefined format")
+	}
+}

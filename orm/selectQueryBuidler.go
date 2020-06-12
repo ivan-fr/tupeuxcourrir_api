@@ -10,11 +10,9 @@ type SelectQueryBuilder struct {
 	QueryApplier
 	aliasFactory *AliasFactory
 
-	SectionSelect     string
-	SectionSelectStmt []interface{}
+	SectionSelect string
 
-	SectionAggregate     string
-	SectionAggregateStmt []interface{}
+	SectionAggregate string
 
 	SectionWhere     string
 	SectionWhereStmt []interface{}
@@ -37,8 +35,8 @@ type SelectQueryBuilder struct {
 
 var singletonSQueryBuilder *SelectQueryBuilder
 
-func (selectQueryBuilder *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName string) string {
-	reflectValueOf := reflect.ValueOf(selectQueryBuilder.relationshipTargetOrder)
+func (sQB *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName string) string {
+	reflectValueOf := reflect.ValueOf(sQB.relationshipTargetOrder)
 	relationshipTargets := reflectValueOf.MapIndex(reflect.ValueOf(fieldRelationshipName))
 
 	var sliceIndex int
@@ -65,68 +63,66 @@ func (selectQueryBuilder *SelectQueryBuilder) getAlias(fieldRelationshipName, ta
 		sliceIndex)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) ConstructSql() string {
+func (sQB *SelectQueryBuilder) ConstructSql() string {
 	switch {
-	case selectQueryBuilder.SectionSelect == "" && selectQueryBuilder.SectionAggregate == "":
-		selectQueryBuilder.SectionSelect = "SELECT *"
-	case selectQueryBuilder.SectionAggregate != "" && selectQueryBuilder.SectionSelect == "":
-		selectQueryBuilder.SectionSelect = "SELECT"
+	case sQB.SectionSelect == "" && sQB.SectionAggregate == "":
+		sQB.SectionSelect = "SELECT *"
+	case sQB.SectionAggregate != "" && sQB.SectionSelect == "":
+		sQB.SectionSelect = "SELECT"
 	}
 
-	selectQueryBuilder.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(selectQueryBuilder.model)))
+	sQB.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(sQB.model)))
 
-	addPrefixToSections(selectQueryBuilder, " ", 1)
+	addPrefixToSections(sQB, " ", 1)
 
 	var joins string
-	for _, join := range selectQueryBuilder.SectionJoin {
+	for _, join := range sQB.SectionJoin {
 		joins = fmt.Sprintf("%v %v", joins, join)
 	}
 
 	var withRollUp string
-	if selectQueryBuilder.RollUp {
+	if sQB.RollUp {
 		withRollUp = " WITH ROLLUP"
 	}
 
 	return fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v;",
-		selectQueryBuilder.SectionSelect,
-		selectQueryBuilder.SectionAggregate,
-		selectQueryBuilder.SectionFrom,
+		sQB.SectionSelect,
+		sQB.SectionAggregate,
+		sQB.SectionFrom,
 		joins,
-		selectQueryBuilder.SectionWhere,
-		selectQueryBuilder.SectionGroupBy,
+		sQB.SectionWhere,
+		sQB.SectionGroupBy,
 		withRollUp,
-		selectQueryBuilder.SectionHaving,
-		selectQueryBuilder.SectionOrder,
-		selectQueryBuilder.SectionLimit,
-		selectQueryBuilder.SectionOffset)
+		sQB.SectionHaving,
+		sQB.SectionOrder,
+		sQB.SectionLimit,
+		sQB.SectionOffset)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) GetStmts() []interface{} {
+func (sQB *SelectQueryBuilder) GetStmts() []interface{} {
 	var stmtsInterface = make([]interface{}, 0)
-	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionSelectStmt...)
-	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionAggregateStmt...)
-	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionWhereStmt...)
-	stmtsInterface = append(stmtsInterface, selectQueryBuilder.SectionHavingStmt...)
+	stmtsInterface = append(stmtsInterface, sQB.SectionWhereStmt...)
+	stmtsInterface = append(stmtsInterface, sQB.SectionHavingStmt...)
 	return stmtsInterface
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) addMTO(fieldName string, fieldInterface interface{}) {
+func (sQB *SelectQueryBuilder) addMTO(fieldName string, fieldInterface interface{}) {
 	relationship := fieldInterface.(*ManyToOneRelationShip)
 	target := reflect.ValueOf(relationship.Target)
 
-	aliasTarget := selectQueryBuilder.getAlias(fieldName, target.Elem().Type().Name())
+	aliasTarget := sQB.getAlias(fieldName, target.Elem().Type().Name())
 
 	stringJoin := fmt.Sprintf("INNER JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(target.Elem().Type().Name()),
 		aliasTarget,
-		getTableName(getModelName(selectQueryBuilder.model)),
+		getTableName(getModelName(sQB.model)),
 		relationship.AssociateColumn,
 		aliasTarget,
 		getPKFieldNameFromModel(target.Interface()))
-	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
+	sQB.SectionJoin = append(sQB.SectionJoin, stringJoin)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) addOTM(fieldName string, fieldInterface interface{}) {
+func (sQB *SelectQueryBuilder) addOTM(fieldName string, fieldInterface interface{}) {
 	relationship := fieldInterface.(*OneToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target).Elem()
 
@@ -136,36 +132,36 @@ func (selectQueryBuilder *SelectQueryBuilder) addOTM(fieldName string, fieldInte
 		targetMTO := target.FieldByName(relationship.FieldMTO).Interface().(*ManyToOneRelationShip)
 		targetAssociatedColumn = targetMTO.AssociateColumn
 	} else {
-		targetAssociatedColumn = getAssociatedColumnFromReverse(selectQueryBuilder.model, target)
+		targetAssociatedColumn = getAssociatedColumnFromReverse(sQB.model, target)
 	}
 
-	aliasTarget := selectQueryBuilder.getAlias(fieldName, target.Type().Name())
+	aliasTarget := sQB.getAlias(fieldName, target.Type().Name())
 
 	stringJoin := fmt.Sprintf("LEFT JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(target.Type().Name()),
 		aliasTarget,
-		getTableName(getModelName(selectQueryBuilder.model)),
-		getPKFieldNameFromModel(selectQueryBuilder.model),
+		getTableName(getModelName(sQB.model)),
+		getPKFieldNameFromModel(sQB.model),
 		aliasTarget,
 		targetAssociatedColumn)
-	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
+	sQB.SectionJoin = append(sQB.SectionJoin, stringJoin)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldName string, fieldInterface interface{}) {
+func (sQB *SelectQueryBuilder) addMTM(fieldName string, fieldInterface interface{}) {
 	relationship := fieldInterface.(*ManyToManyRelationShip)
 	target := reflect.ValueOf(relationship.Target)
 	intermediateTarget := reflect.ValueOf(relationship.IntermediateTarget).Elem()
 
-	aliasIntermediateTarget := selectQueryBuilder.getAlias(fieldName, intermediateTarget.Type().Name())
-	aliasTarget := selectQueryBuilder.getAlias(fieldName, target.Elem().Type().Name())
+	aliasIntermediateTarget := sQB.getAlias(fieldName, intermediateTarget.Type().Name())
+	aliasTarget := sQB.getAlias(fieldName, target.Elem().Type().Name())
 
 	stringJoin := fmt.Sprintf("LEFT JOIN %v %v ON %v.%v = %v.%v INNER JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(intermediateTarget.Type().Name()),
 		aliasIntermediateTarget,
-		getTableName(getModelName(selectQueryBuilder.model)),
-		getPKFieldNameFromModel(selectQueryBuilder.model),
+		getTableName(getModelName(sQB.model)),
+		getPKFieldNameFromModel(sQB.model),
 		aliasIntermediateTarget,
-		getAssociatedColumnFromReverse(selectQueryBuilder.model, intermediateTarget),
+		getAssociatedColumnFromReverse(sQB.model, intermediateTarget),
 
 		getTableName(target.Elem().Type().Name()),
 		aliasTarget,
@@ -173,49 +169,47 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldName string, fieldInte
 		getAssociatedColumnFromReverse(target.Interface(), intermediateTarget),
 		aliasTarget,
 		getPKFieldNameFromModel(target.Interface()))
-	selectQueryBuilder.SectionJoin = append(selectQueryBuilder.SectionJoin, stringJoin)
+	sQB.SectionJoin = append(sQB.SectionJoin, stringJoin)
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.aliasFactory.adaptContext(orderFilter, false)
-	var str string
-	str, _ = constructSQlStmts(
-		",",
-		"space",
-		orderFilter)
-	selectQueryBuilder.SectionOrder = fmt.Sprintf("ORDER BY %v", str)
+func (sQB *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
+	sQB.aliasFactory.adaptContext(orderFilter, false)
+	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: true, mode: "space", context: orderFilter}
+	sSA.constructSQlSection()
 
-	return selectQueryBuilder
+	sQB.SectionOrder = fmt.Sprintf("ORDER BY %v", sSA.SQLSection)
+
+	return sQB
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Limit(limit string) *SelectQueryBuilder {
-	selectQueryBuilder.SectionLimit = fmt.Sprintf("LIMIT %v", limit)
-	return selectQueryBuilder
+func (sQB *SelectQueryBuilder) Limit(limit string) *SelectQueryBuilder {
+	sQB.SectionLimit = fmt.Sprintf("LIMIT %v", limit)
+	return sQB
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQueryBuilder {
-	selectQueryBuilder.SectionOffset = fmt.Sprintf("OFFSET %v", offset)
-	return selectQueryBuilder
+func (sQB *SelectQueryBuilder) Offset(offset string) *SelectQueryBuilder {
+	sQB.SectionOffset = fmt.Sprintf("OFFSET %v", offset)
+	return sQB
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Where(logical *Logical) *SelectQueryBuilder {
-	selectQueryBuilder.aliasFactory.adaptContext(logical, false)
+func (sQB *SelectQueryBuilder) Where(logical *Logical) *SelectQueryBuilder {
+	sQB.aliasFactory.adaptContext(logical, false)
 
 	var str string
-	str, selectQueryBuilder.SectionWhereStmt = logical.GetSentence("setter")
-	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", str)
+	str, sQB.SectionWhereStmt = logical.GetSentence("setter")
+	sQB.SectionWhere = fmt.Sprintf("WHERE %v", str)
 
-	return selectQueryBuilder
+	return sQB
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) SetModel(model interface{}) {
-	selectQueryBuilder.Clean()
-	selectQueryBuilder.model = nil
-	selectQueryBuilder.model = model
+func (sQB *SelectQueryBuilder) SetModel(model interface{}) {
+	sQB.Clean()
+	sQB.model = nil
+	sQB.model = model
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Clean() {
-	reflectQueryBuilder := reflect.ValueOf(selectQueryBuilder).Elem()
+func (sQB *SelectQueryBuilder) Clean() {
+	reflectQueryBuilder := reflect.ValueOf(sQB).Elem()
 
 	for i := 0; i < reflectQueryBuilder.NumField(); i++ {
 		switch reflectQueryBuilder.Field(i).Kind() {
@@ -229,76 +223,79 @@ func (selectQueryBuilder *SelectQueryBuilder) Clean() {
 			reflectQueryBuilder.Field(i).SetBool(false)
 		}
 	}
-	selectQueryBuilder.QueryApplier.Clean()
+	sQB.QueryApplier.Clean()
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *SelectQueryBuilder {
-	reflectQueryBuilder := reflect.ValueOf(selectQueryBuilder.model).Elem()
+func (sQB *SelectQueryBuilder) Consider(fieldName string) *SelectQueryBuilder {
+	reflectQueryBuilder := reflect.ValueOf(sQB.model).Elem()
 	fieldInterface := reflectQueryBuilder.FieldByName(fieldName).Interface()
 
-	if selectQueryBuilder.addRelationship(fieldName, fieldInterface) {
+	if sQB.addRelationship(fieldName, fieldInterface) {
 		switch fieldInterface.(type) {
 		case *ManyToOneRelationShip:
-			selectQueryBuilder.addMTO(fieldName, fieldInterface)
+			sQB.addMTO(fieldName, fieldInterface)
 		case *OneToManyRelationShip:
-			selectQueryBuilder.addOTM(fieldName, fieldInterface)
+			sQB.addOTM(fieldName, fieldInterface)
 		case *ManyToManyRelationShip:
-			selectQueryBuilder.addMTM(fieldName, fieldInterface)
+			sQB.addMTM(fieldName, fieldInterface)
 		}
 	}
 
-	return selectQueryBuilder
+	return sQB
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
-	selectQueryBuilder.aliasFactory.adaptContext(columns, false)
+func (sQB *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
+	sQB.aliasFactory.adaptContext(columns, false)
 
-	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
-		constructSQlSpaceNoStmts(",", columns))
+	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
+	sSA.constructSQlSection()
 
-	return selectQueryBuilder
+	sQB.SectionGroupBy = fmt.Sprintf("GROUP BY %v", sSA.SQLSection)
+
+	return sQB
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
-	selectQueryBuilder.aliasFactory.adaptContext(columns, false)
+func (sQB *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
+	sQB.aliasFactory.adaptContext(columns, false)
 
-	selectQueryBuilder.columns = columns
+	sQB.columns = columns
+
+	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
+	sSA.constructSQlSection()
+	sQB.SectionSelect = fmt.Sprintf("SELECT %v", sSA.SQLSection)
+
+	return sQB
+}
+
+func (sQB *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
+	sQB.aliasFactory.adaptContext(aggregateMap, true)
+
+	sQB.aggregates = aggregateMap
+
+	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "aggregate", context: aggregateMap}
+	sSA.constructSQlSection()
+
+	sQB.SectionAggregate = sSA.SQLSection
+
+	return sQB
+}
+
+func (sQB *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
+	sQB.aliasFactory.adaptContext(logical, true)
 
 	var str string
-	str, selectQueryBuilder.SectionSelectStmt = constructSQlStmts(",", "space", columns)
-	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v", str)
+	str, sQB.SectionHavingStmt = logical.GetSentence("aggregate")
+	sQB.SectionHaving = fmt.Sprintf("HAVING %v", str)
 
-	return selectQueryBuilder
+	return sQB
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.aliasFactory.adaptContext(aggregateMap, true)
-
-	selectQueryBuilder.aggregates = aggregateMap
-	var str string
-	str, selectQueryBuilder.SectionAggregateStmt = constructSQlStmts(
-		",", "aggregate", aggregateMap)
-	selectQueryBuilder.SectionAggregate = str
-
-	return selectQueryBuilder
-}
-
-func (selectQueryBuilder *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
-	selectQueryBuilder.aliasFactory.adaptContext(logical, true)
-
-	var str string
-	str, selectQueryBuilder.SectionHavingStmt = logical.GetSentence("aggregate")
-	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", str)
-
-	return selectQueryBuilder
-}
-
-func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, error) {
-	defer selectQueryBuilder.Clean()
+func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, error) {
+	defer sQB.Clean()
 	connection := db.GetConnectionFromDB()
-	row := connection.Db.QueryRow(selectQueryBuilder.ConstructSql())
+	row := connection.Db.QueryRow(sQB.ConstructSql())
 
-	var columnsResult = make([]interface{}, len(selectQueryBuilder.columns)+len(selectQueryBuilder.aggregates))
+	var columnsResult = make([]interface{}, len(sQB.columns)+len(sQB.aggregates))
 
 	var addrColumnsResult []interface{}
 	for i := 0; i < len(columnsResult); i++ {
@@ -310,12 +307,12 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryToSlice() (map[string]in
 	var mapColumnsResult = make(map[string]interface{})
 
 	i := 0
-	for _, value := range selectQueryBuilder.columns {
+	for _, value := range sQB.columns {
 		mapColumnsResult[value] = columnsResult[i]
 		i++
 	}
 
-	for key := range selectQueryBuilder.aggregates {
+	for key := range sQB.aggregates {
 		mapColumnsResult[key] = columnsResult[i]
 		i++
 	}
@@ -323,21 +320,21 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryToSlice() (map[string]in
 	return mapColumnsResult, err
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
-	if selectQueryBuilder.SectionSelect != "" || selectQueryBuilder.SectionAggregate != "" {
+func (sQB *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
+	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
 		panic("configuration not supported")
 	}
 
 	connection := db.GetConnectionFromDB()
-	defer selectQueryBuilder.Clean()
+	defer sQB.Clean()
 
 	var modelsMatrix [][]*ModelsScanned
-	rows, err := connection.Db.Query(selectQueryBuilder.ConstructSql())
+	rows, err := connection.Db.Query(sQB.ConstructSql())
 
 	if err == nil {
 		var modelsList []*ModelsScanned
 		for rows.Next() {
-			modelsList, err = selectQueryBuilder.hydrate(rows.Scan)
+			modelsList, err = sQB.hydrate(rows.Scan)
 
 			if err != nil {
 				break
@@ -349,16 +346,16 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, 
 	return modelsMatrix, err
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
-	if selectQueryBuilder.SectionSelect != "" || selectQueryBuilder.SectionAggregate != "" {
+func (sQB *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
+	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
 		panic("configuration not supported")
 	}
 
 	connection := db.GetConnectionFromDB()
-	defer selectQueryBuilder.Clean()
+	defer sQB.Clean()
 
-	row := connection.Db.QueryRow(selectQueryBuilder.ConstructSql())
-	modelsList, err := selectQueryBuilder.hydrate(row.Scan)
+	row := connection.Db.QueryRow(sQB.ConstructSql())
+	modelsList, err := sQB.hydrate(row.Scan)
 
 	return modelsList, err
 }
