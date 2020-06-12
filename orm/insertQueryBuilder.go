@@ -123,7 +123,7 @@ func (iQB *InsertQueryBuilder) Clean() {
 func (iQB *InsertQueryBuilder) ApplyInsert() (sql.Result, error) {
 	connection := db.GetConnectionFromDB()
 	defer iQB.Clean()
-	return connection.Db.Exec(iQB.constructSql())
+	return connection.Db.Exec(iQB.constructSql(), iQB.stmt...)
 }
 
 func GetInsertQueryBuilder(model interface{}, modelsValues []interface{}) *InsertQueryBuilder {

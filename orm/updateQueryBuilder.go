@@ -89,9 +89,16 @@ func (uQB *UpdateQueryBuilder) Clean() {
 	uQB.SectionSet = ""
 }
 
+func (uQB *UpdateQueryBuilder) GetStmts() []interface{} {
+	var stmtsInterface = make([]interface{}, 0)
+	stmtsInterface = append(stmtsInterface, uQB.SectionSetStmt...)
+	stmtsInterface = append(stmtsInterface, uQB.SectionWhereStmt...)
+	return stmtsInterface
+}
+
 func (uQB *UpdateQueryBuilder) ApplyUpdate() (sql.Result, error) {
 	connection := db.GetConnectionFromDB()
-	return connection.Db.Exec(uQB.ConstructSql())
+	return connection.Db.Exec(uQB.ConstructSql(), uQB.GetStmts()...)
 }
 
 func GetUpdateQueryBuilder(model interface{}) *UpdateQueryBuilder {

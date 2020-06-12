@@ -256,9 +256,13 @@ func (sQB *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
 }
 
 func (sQB *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
-	sQB.aliasFactory.adaptContext(columns, false)
+	sQB.columns = make([]string, 0)
 
-	sQB.columns = columns
+	for _, val := range columns {
+		sQB.columns = append(sQB.columns, val)
+	}
+
+	sQB.aliasFactory.adaptContext(columns, false)
 
 	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
 	sSA.constructSQlSection()
@@ -268,9 +272,13 @@ func (sQB *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
 }
 
 func (sQB *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	sQB.aliasFactory.adaptContext(aggregateMap, true)
+	sQB.aggregates = make(map[string]interface{})
 
-	sQB.aggregates = aggregateMap
+	for key, val := range aggregateMap {
+		sQB.aggregates[key] = val
+	}
+
+	sQB.aliasFactory.adaptContext(aggregateMap, true)
 
 	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "aggregate", context: aggregateMap}
 	sSA.constructSQlSection()
@@ -293,7 +301,7 @@ func (sQB *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
 func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, error) {
 	defer sQB.Clean()
 	connection := db.GetConnectionFromDB()
-	row := connection.Db.QueryRow(sQB.ConstructSql())
+	row := connection.Db.QueryRow(sQB.ConstructSql(), sQB.GetStmts()...)
 
 	var columnsResult = make([]interface{}, len(sQB.columns)+len(sQB.aggregates))
 
@@ -312,8 +320,8 @@ func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, erro
 		i++
 	}
 
-	for key := range sQB.aggregates {
-		mapColumnsResult[key] = columnsResult[i]
+	for key, value := range sQB.aggregates {
+		mapColumnsResult[fmt.Sprintf("%v(%v)", key, value)] = columnsResult[i]
 		i++
 	}
 
@@ -329,7 +337,7 @@ func (sQB *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
 	defer sQB.Clean()
 
 	var modelsMatrix [][]*ModelsScanned
-	rows, err := connection.Db.Query(sQB.ConstructSql())
+	rows, err := connection.Db.Query(sQB.ConstructSql(), sQB.GetStmts()...)
 
 	if err == nil {
 		var modelsList []*ModelsScanned
@@ -354,7 +362,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	row := connection.Db.QueryRow(sQB.ConstructSql())
+	row := connection.Db.QueryRow(sQB.ConstructSql(), sQB.GetStmts()...)
 	modelsList, err := sQB.hydrate(row.Scan)
 
 	return modelsList, err
