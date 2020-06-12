@@ -50,7 +50,7 @@ func (insertQueryBuilder *InsertQueryBuilder) getSQLSectionValuesToInsert(modelV
 
 	var str string
 	var stmt []interface{}
-	str, stmt = ConstructSQlStmts(",", "space", listToInsert)
+	str, stmt = constructSQlStmts(",", "space", listToInsert)
 	insertQueryBuilder.stmt = append(insertQueryBuilder.stmt, stmt...)
 	return fmt.Sprintf("(%v)", str)
 }

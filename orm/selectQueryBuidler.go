@@ -3,12 +3,13 @@ package orm
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"tupeuxcourrir_api/db"
 )
 
 type SelectQueryBuilder struct {
 	QueryApplier
+	aliasFactory *AliasFactory
+
 	SectionSelect     string
 	SectionSelectStmt []interface{}
 
@@ -35,67 +36,6 @@ type SelectQueryBuilder struct {
 }
 
 var singletonSQueryBuilder *SelectQueryBuilder
-
-func (selectQueryBuilder *SelectQueryBuilder) adaptColumnWithAlias(stringToSplit string, ptrStringToUpdate *string) bool {
-	result := true
-	dotSplit := strings.Split(stringToSplit, ".")
-	switch len(dotSplit) {
-	case 3:
-		*ptrStringToUpdate = fmt.Sprintf("%v.%v",
-			selectQueryBuilder.getAlias(dotSplit[0], dotSplit[1]),
-			dotSplit[2])
-	case 2:
-		*ptrStringToUpdate = fmt.Sprintf("%v.%v",
-			selectQueryBuilder.getAlias(dotSplit[0], ""),
-			dotSplit[1])
-	default:
-		result = false
-	}
-
-	return result
-}
-
-func (selectQueryBuilder *SelectQueryBuilder) adaptContext(context interface{}, aggregate bool) {
-	switch context.(type) {
-	case []string:
-		sliceString := context.([]string)
-		for i, valueString := range sliceString {
-			selectQueryBuilder.adaptColumnWithAlias(valueString, &valueString)
-			sliceString[i] = valueString
-		}
-	case map[string]interface{}:
-		mapStringInterface := context.(map[string]interface{})
-		var mapToMerge = make(map[string]interface{})
-
-		for key, aInterface := range mapStringInterface {
-
-			if aggregate {
-				switch aInterface.(type) {
-				case string:
-					theString := mapStringInterface[key].(string)
-					selectQueryBuilder.adaptColumnWithAlias(aInterface.(string), &theString)
-					mapStringInterface[key] = theString
-				case []interface{}:
-					theSlice := aInterface.([]interface{})
-					theString := theSlice[0].(string)
-					selectQueryBuilder.adaptColumnWithAlias(theSlice[0].(string), &theString)
-					theSlice[0] = theString
-				}
-			} else {
-				var theKey string
-
-				if selectQueryBuilder.adaptColumnWithAlias(key, &theKey) {
-					mapToMerge[theKey] = mapStringInterface[key]
-					delete(mapStringInterface, key)
-				}
-			}
-		}
-
-		for key, aInterface := range mapToMerge {
-			mapStringInterface[key] = aInterface
-		}
-	}
-}
 
 func (selectQueryBuilder *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName string) string {
 	reflectValueOf := reflect.ValueOf(selectQueryBuilder.relationshipTargetOrder)
@@ -237,9 +177,9 @@ func (selectQueryBuilder *SelectQueryBuilder) addMTM(fieldName string, fieldInte
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptContext(orderFilter, false)
+	selectQueryBuilder.aliasFactory.adaptContext(orderFilter, false)
 	var str string
-	str, _ = ConstructSQlStmts(
+	str, _ = constructSQlStmts(
 		",",
 		"space",
 		orderFilter)
@@ -258,14 +198,11 @@ func (selectQueryBuilder *SelectQueryBuilder) Offset(offset string) *SelectQuery
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Where(mapFilter map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptContext(mapFilter, false)
+func (selectQueryBuilder *SelectQueryBuilder) Where(logical *Logical) *SelectQueryBuilder {
+	selectQueryBuilder.aliasFactory.adaptContext(logical, false)
 
 	var str string
-	str, selectQueryBuilder.SectionWhereStmt = ConstructSQlStmts(
-		" and",
-		"setter",
-		mapFilter)
+	str, selectQueryBuilder.SectionWhereStmt = logical.GetSentence("setter")
 	selectQueryBuilder.SectionWhere = fmt.Sprintf("WHERE %v", str)
 
 	return selectQueryBuilder
@@ -314,44 +251,43 @@ func (selectQueryBuilder *SelectQueryBuilder) Consider(fieldName string) *Select
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
-	selectQueryBuilder.adaptContext(columns, false)
+	selectQueryBuilder.aliasFactory.adaptContext(columns, false)
 
 	selectQueryBuilder.SectionGroupBy = fmt.Sprintf("GROUP BY %v",
-		ConstructSQlSpaceNoStmts(",", columns))
+		constructSQlSpaceNoStmts(",", columns))
 
 	return selectQueryBuilder
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
-	selectQueryBuilder.adaptContext(columns, false)
+	selectQueryBuilder.aliasFactory.adaptContext(columns, false)
 
 	selectQueryBuilder.columns = columns
 
 	var str string
-	str, selectQueryBuilder.SectionSelectStmt = ConstructSQlStmts(",", "space", columns)
+	str, selectQueryBuilder.SectionSelectStmt = constructSQlStmts(",", "space", columns)
 	selectQueryBuilder.SectionSelect = fmt.Sprintf("SELECT %v", str)
 
 	return selectQueryBuilder
 }
 
 func (selectQueryBuilder *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptContext(aggregateMap, true)
+	selectQueryBuilder.aliasFactory.adaptContext(aggregateMap, true)
 
 	selectQueryBuilder.aggregates = aggregateMap
 	var str string
-	str, selectQueryBuilder.SectionAggregateStmt = ConstructSQlStmts(
+	str, selectQueryBuilder.SectionAggregateStmt = constructSQlStmts(
 		",", "aggregate", aggregateMap)
 	selectQueryBuilder.SectionAggregate = str
 
 	return selectQueryBuilder
 }
 
-func (selectQueryBuilder *SelectQueryBuilder) Having(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	selectQueryBuilder.adaptContext(aggregateMap, true)
+func (selectQueryBuilder *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
+	selectQueryBuilder.aliasFactory.adaptContext(logical, true)
 
 	var str string
-	str, selectQueryBuilder.SectionHavingStmt = ConstructSQlStmts(
-		" and", "aggregate", aggregateMap)
+	str, selectQueryBuilder.SectionHavingStmt = logical.GetSentence("aggregate")
 	selectQueryBuilder.SectionHaving = fmt.Sprintf("HAVING %v", str)
 
 	return selectQueryBuilder
@@ -430,6 +366,7 @@ func (selectQueryBuilder *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned,
 func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
 	if singletonIQueryBuilder == nil {
 		singletonSQueryBuilder = &SelectQueryBuilder{}
+		singletonSQueryBuilder.aliasFactory = &AliasFactory{getAliasFunc: singletonSQueryBuilder.getAlias}
 	}
 
 	singletonSQueryBuilder.SetModel(model)

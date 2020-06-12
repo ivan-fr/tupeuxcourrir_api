@@ -175,7 +175,7 @@ func analyseSetterMode(sql, columnName string, value interface{}, comparative st
 	if checkSlice && comparative == "IN" {
 		valueOfValue := reflect.ValueOf(value)
 		if valueOfValue.Type().Kind() == reflect.Slice {
-			str, stmts := ConstructSQlStmts(",", "space", valueOfValue.Interface())
+			str, stmts := constructSQlStmts(",", "space", valueOfValue.Interface())
 			return fmt.Sprintf(formats[1], sql, columnName, str), stmts
 		}
 	}
@@ -209,7 +209,7 @@ func analyseAggregateMode(sql, aggregateFunction string, value interface{}, comp
 			if comparative == "IN" && checkSlice {
 				valueOfVToCompare := reflect.ValueOf(vToCompare)
 				if valueOfVToCompare.Type().Kind() == reflect.Slice {
-					str, stmts := ConstructSQlStmts(",", "space", valueOfVToCompare.Interface())
+					str, stmts := constructSQlStmts(",", "space", valueOfVToCompare.Interface())
 					return fmt.Sprintf(formats[1], sql, columnName, str), stmts
 				}
 			}
@@ -276,7 +276,7 @@ func getFormatsMode(mapSetterMode string) []string {
 	}
 }
 
-func ConstructSQlStmts(intermediateStringMap string,
+func constructSQlStmts(intermediateStringMap string,
 	mapSetterMode string,
 	context interface{}) (string, []interface{}) {
 
@@ -292,7 +292,7 @@ func ConstructSQlStmts(intermediateStringMap string,
 	}
 }
 
-func ConstructSQlSpaceNoStmts(intermediateStringMap string,
+func constructSQlSpaceNoStmts(intermediateStringMap string,
 	context interface{}) string {
 
 	var formats = getFormatsMode("space")
