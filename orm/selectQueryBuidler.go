@@ -8,7 +8,7 @@ import (
 
 type SelectQueryBuilder struct {
 	QueryApplier
-	aliasFactory *AliasFactory
+	aliasFactory *ContextAdapterFactory
 
 	SectionSelect string
 
@@ -371,7 +371,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
 func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
 	if singletonIQueryBuilder == nil {
 		singletonSQueryBuilder = &SelectQueryBuilder{}
-		singletonSQueryBuilder.aliasFactory = &AliasFactory{getAliasFunc: singletonSQueryBuilder.getAlias}
+		singletonSQueryBuilder.aliasFactory = &ContextAdapterFactory{getAliasFunc: singletonSQueryBuilder.getAlias}
 	}
 
 	singletonSQueryBuilder.SetModel(model)
