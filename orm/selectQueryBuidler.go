@@ -63,7 +63,7 @@ func (sQB *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName s
 		sliceIndex)
 }
 
-func (sQB *SelectQueryBuilder) ConstructSql() string {
+func (sQB *SelectQueryBuilder) constructSql() string {
 	switch {
 	case sQB.SectionSelect == "" && sQB.SectionAggregate == "":
 		sQB.SectionSelect = "SELECT *"
@@ -99,7 +99,7 @@ func (sQB *SelectQueryBuilder) ConstructSql() string {
 		sQB.SectionOffset)
 }
 
-func (sQB *SelectQueryBuilder) GetStmts() []interface{} {
+func (sQB *SelectQueryBuilder) getStmts() []interface{} {
 	var stmtsInterface = make([]interface{}, 0)
 	stmtsInterface = append(stmtsInterface, sQB.SectionWhereStmt...)
 	stmtsInterface = append(stmtsInterface, sQB.SectionHavingStmt...)
@@ -299,15 +299,20 @@ func (sQB *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
 }
 
 func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, error) {
-	defer sQB.Clean()
+	if sQB.SectionSelect == "" && sQB.SectionAggregate == "" {
+		panic("configuration not supported")
+	}
+
 	connection := db.GetConnectionFromDB()
-	row := connection.Db.QueryRow(sQB.ConstructSql(), sQB.GetStmts()...)
+	defer sQB.Clean()
+
+	row := connection.Db.QueryRow(sQB.constructSql(), sQB.getStmts()...)
 
 	var columnsResult = make([]interface{}, len(sQB.columns)+len(sQB.aggregates))
 
 	var addrColumnsResult []interface{}
 	for i := 0; i < len(columnsResult); i++ {
-		addrColumnsResult = append(addrColumnsResult, &columnsResult[i])
+		addrColumnsResult = append(addrColumnsResult, columnsResult[i])
 	}
 
 	err := row.Scan(addrColumnsResult...)
@@ -337,7 +342,7 @@ func (sQB *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
 	defer sQB.Clean()
 
 	var modelsMatrix [][]*ModelsScanned
-	rows, err := connection.Db.Query(sQB.ConstructSql(), sQB.GetStmts()...)
+	rows, err := connection.Db.Query(sQB.constructSql(), sQB.getStmts()...)
 
 	if err == nil {
 		var modelsList []*ModelsScanned
@@ -362,7 +367,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	row := connection.Db.QueryRow(sQB.ConstructSql(), sQB.GetStmts()...)
+	row := connection.Db.QueryRow(sQB.constructSql(), sQB.getStmts()...)
 	modelsList, err := sQB.hydrate(row.Scan)
 
 	return modelsList, err
