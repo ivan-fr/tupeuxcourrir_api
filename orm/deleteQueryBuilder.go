@@ -30,7 +30,7 @@ func (dQB *DeleteQueryBuilder) ConstructSql() string {
 }
 
 func (dQB *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
-	sSA := &SQLSectionArchitecture{mode: "setter", isStmts: true, intermediateString: " and", context: mapFilter}
+	sSA := &sQLSectionArchitecture{mode: "setter", isStmts: true, intermediateString: " and", context: mapFilter}
 	sSA.constructSQlSection()
 
 	dQB.SectionWhereStmt = sSA.valuesFromStmts

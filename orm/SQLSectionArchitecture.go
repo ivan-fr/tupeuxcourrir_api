@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type SQLSectionArchitecture struct {
+type sQLSectionArchitecture struct {
 	SQLSection      string
 	valuesFromStmts []interface{}
 	formats         []string
@@ -17,7 +17,7 @@ type SQLSectionArchitecture struct {
 	context            interface{}
 }
 
-func (sSA *SQLSectionArchitecture) analyseSliceContext() {
+func (sSA *sQLSectionArchitecture) analyseSliceContext() {
 	valueOfContext := reflect.ValueOf(sSA.context)
 
 	for i := 0; i < valueOfContext.Len(); i++ {
@@ -34,7 +34,7 @@ func (sSA *SQLSectionArchitecture) analyseSliceContext() {
 	}
 }
 
-func (sSA *SQLSectionArchitecture) addStmt(stmt interface{}) {
+func (sSA *sQLSectionArchitecture) addStmt(stmt interface{}) {
 	if !sSA.isStmts {
 		panic("the program try to put a stmt whereas the sSA have isStmts to false")
 	}
@@ -42,22 +42,22 @@ func (sSA *SQLSectionArchitecture) addStmt(stmt interface{}) {
 	sSA.valuesFromStmts = append(sSA.valuesFromStmts, stmt)
 }
 
-func (sSA *SQLSectionArchitecture) putIntermediate(index int) {
+func (sSA *sQLSectionArchitecture) putIntermediate(index int) {
 	valueOfContext := reflect.ValueOf(sSA.context)
 	if 0 <= index && index <= (valueOfContext.Len()-2) && (0 != valueOfContext.Len()-1) {
 		sSA.SQLSection = fmt.Sprintf("%v%v", sSA.SQLSection, sSA.intermediateString)
 	}
 }
 
-func (sSA *SQLSectionArchitecture) getComparative(keySplit []string) string {
+func (sSA *sQLSectionArchitecture) getComparative(keySplit []string) string {
 	if len(keySplit) == 1 {
 		return getComparativeFormat("")
-	} else {
-		return getComparativeFormat(keySplit[len(keySplit)-1])
 	}
+
+	return getComparativeFormat(keySplit[len(keySplit)-1])
 }
 
-func (sSA *SQLSectionArchitecture) getEffectiveFormats(comparative string) []string {
+func (sSA *sQLSectionArchitecture) getEffectiveFormats(comparative string) []string {
 	sliceToStorage := make([]string, 0)
 
 	if sSA.mode != "space" {
@@ -76,7 +76,7 @@ func (sSA *SQLSectionArchitecture) getEffectiveFormats(comparative string) []str
 	return sliceToStorage
 }
 
-func (sSA *SQLSectionArchitecture) analyseMapStringInterfaceContext() {
+func (sSA *sQLSectionArchitecture) analyseMapStringInterfaceContext() {
 	var keySplit []string
 	var columnName string
 
@@ -113,7 +113,7 @@ func (sSA *SQLSectionArchitecture) analyseMapStringInterfaceContext() {
 	}
 }
 
-func (sSA *SQLSectionArchitecture) analyseSetterMode(columnName string, value interface{}, comparative string, formats []string) {
+func (sSA *sQLSectionArchitecture) analyseSetterMode(columnName string, value interface{}, comparative string, formats []string) {
 	var checkSlice = false
 
 	switch value.(type) {
@@ -140,7 +140,7 @@ func (sSA *SQLSectionArchitecture) analyseSetterMode(columnName string, value in
 	if checkSlice && comparative == "IN" {
 		valueOfValue := reflect.ValueOf(value)
 		if valueOfValue.Type().Kind() == reflect.Slice {
-			sSASub := &SQLSectionArchitecture{mode: "space",
+			sSASub := &sQLSectionArchitecture{mode: "space",
 				isStmts:            true,
 				intermediateString: ",",
 				context:            valueOfValue.Interface()}
@@ -152,7 +152,7 @@ func (sSA *SQLSectionArchitecture) analyseSetterMode(columnName string, value in
 	}
 }
 
-func (sSA *SQLSectionArchitecture) analyseAggregateMode(aggregateFunction string, value interface{}, comparative string, formats []string) {
+func (sSA *sQLSectionArchitecture) analyseAggregateMode(aggregateFunction string, value interface{}, comparative string, formats []string) {
 	if _, ok := value.(string); ok {
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, aggregateFunction, value.(string))
 	} else {
@@ -180,7 +180,7 @@ func (sSA *SQLSectionArchitecture) analyseAggregateMode(aggregateFunction string
 			if comparative == "IN" && checkSlice {
 				valueOfVToCompare := valueOfValue.Index(1).Interface()
 				if reflect.TypeOf(valueOfVToCompare).Kind() == reflect.Slice {
-					sSASub := &SQLSectionArchitecture{mode: "space",
+					sSASub := &sQLSectionArchitecture{mode: "space",
 						isStmts:            true,
 						intermediateString: ",",
 						context:            valueOfVToCompare}
@@ -194,7 +194,7 @@ func (sSA *SQLSectionArchitecture) analyseAggregateMode(aggregateFunction string
 	}
 }
 
-func (sSA *SQLSectionArchitecture) analyseSpaceModeFromMap(columnName string, value interface{}, formats []string) {
+func (sSA *sQLSectionArchitecture) analyseSpaceModeFromMap(columnName string, value interface{}, formats []string) {
 	switch value.(type) {
 	case string:
 		if value == "" {
@@ -207,7 +207,7 @@ func (sSA *SQLSectionArchitecture) analyseSpaceModeFromMap(columnName string, va
 	}
 }
 
-func (sSA *SQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) {
+func (sSA *sQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) {
 	switch value.(type) {
 	case string:
 		switch value.(string) {
@@ -231,7 +231,7 @@ func (sSA *SQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) 
 	}
 }
 
-func (sSA *SQLSectionArchitecture) setFormatsFromMode() {
+func (sSA *sQLSectionArchitecture) setFormatsFromMode() {
 	switch sSA.mode {
 	case "setter":
 		sSA.formats = []string{".. %v .", ".. %v (.)"}
@@ -244,7 +244,7 @@ func (sSA *SQLSectionArchitecture) setFormatsFromMode() {
 	}
 }
 
-func (sSA *SQLSectionArchitecture) constructSQlSection() {
+func (sSA *sQLSectionArchitecture) constructSQlSection() {
 	sSA.setFormatsFromMode()
 
 	switch sSA.context.(type) {

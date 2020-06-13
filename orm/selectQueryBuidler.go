@@ -174,7 +174,7 @@ func (sQB *SelectQueryBuilder) addMTM(fieldName string, fieldInterface interface
 
 func (sQB *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
 	sQB.aliasFactory.adaptContext(orderFilter, false)
-	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: true, mode: "space", context: orderFilter}
+	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: true, mode: "space", context: orderFilter}
 	sSA.constructSQlSection()
 
 	sQB.SectionOrder = fmt.Sprintf("ORDER BY %v", sSA.SQLSection)
@@ -247,7 +247,7 @@ func (sQB *SelectQueryBuilder) Consider(fieldName string) *SelectQueryBuilder {
 func (sQB *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
 	sQB.aliasFactory.adaptContext(columns, false)
 
-	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
+	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
 	sSA.constructSQlSection()
 
 	sQB.SectionGroupBy = fmt.Sprintf("GROUP BY %v", sSA.SQLSection)
@@ -264,7 +264,7 @@ func (sQB *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
 
 	sQB.aliasFactory.adaptContext(columns, false)
 
-	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
+	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
 	sSA.constructSQlSection()
 	sQB.SectionSelect = fmt.Sprintf("SELECT %v", sSA.SQLSection)
 
@@ -280,7 +280,7 @@ func (sQB *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *S
 
 	sQB.aliasFactory.adaptContext(aggregateMap, true)
 
-	sSA := &SQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "aggregate", context: aggregateMap}
+	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "aggregate", context: aggregateMap}
 	sSA.constructSQlSection()
 
 	sQB.SectionAggregate = sSA.SQLSection

@@ -48,7 +48,7 @@ func (iQB *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{
 		}
 	}
 
-	sSA := &SQLSectionArchitecture{mode: "space", isStmts: true, intermediateString: ",", context: listToInsert}
+	sSA := &sQLSectionArchitecture{mode: "space", isStmts: true, intermediateString: ",", context: listToInsert}
 	sSA.constructSQlSection()
 
 	iQB.stmt = append(iQB.stmt, sSA.valuesFromStmts...)

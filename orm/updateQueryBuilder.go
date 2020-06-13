@@ -43,7 +43,7 @@ func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
 		}
 	}
 
-	sSA := &SQLSectionArchitecture{mode: "setter", intermediateString: ",", context: mapFilter, isStmts: true}
+	sSA := &sQLSectionArchitecture{mode: "setter", intermediateString: ",", context: mapFilter, isStmts: true}
 	sSA.constructSQlSection()
 	uQB.SectionSetStmt = sSA.valuesFromStmts
 	uQB.SectionSet = fmt.Sprintf("SET %v", sSA.SQLSection)

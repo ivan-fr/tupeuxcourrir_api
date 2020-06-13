@@ -46,7 +46,7 @@ func (logical *Logical) GetSentence(mapSetterMode string) (string, []interface{}
 			stmts = append(stmts, stmtsPart...)
 			sentences = append(sentences, fmt.Sprintf("(%v)", str))
 		default:
-			sSA := &SQLSectionArchitecture{intermediateString: logical.intermediateString,
+			sSA := &sQLSectionArchitecture{intermediateString: logical.intermediateString,
 				isStmts: true,
 				mode:    mapSetterMode,
 				context: combination}
@@ -56,7 +56,7 @@ func (logical *Logical) GetSentence(mapSetterMode string) (string, []interface{}
 		}
 	}
 
-	sSA := &SQLSectionArchitecture{intermediateString: logical.intermediateString,
+	sSA := &sQLSectionArchitecture{intermediateString: logical.intermediateString,
 		isStmts: false,
 		mode:    "space",
 		context: sentences}
