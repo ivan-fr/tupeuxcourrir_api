@@ -23,5 +23,5 @@ func main() {
 
 	sQueryBuilder.RollUp = true
 
-	fmt.Println(sQueryBuilder.ApplyQueryToSlice())
+	fmt.Println(sQueryBuilder.ApplyQueryRow())
 }
