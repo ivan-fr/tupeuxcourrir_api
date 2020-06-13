@@ -14,10 +14,10 @@ func main() {
 		Consider("InitiatedThread").
 		Consider("ReceivedThread").
 		Consider("Roles").
-		Where(orm.Or(map[string]interface{}{"ReceivedThread.IdThread": "lol", "koko": 9, "giro": nil},
+		Where(orm.Or(map[string]interface{}{"ReceivedThread.IdThread__in": []int{1, 18, 9, 8}, "koko": 9, "giro": nil},
 			orm.And(map[string]interface{}{"Re": "loli", "ReceivedThread.IdThread": 63, "giro": nil}))).
 		Aggregate(map[string]interface{}{"COUNT": "ReceivedThread.IdThread", "AVG": "IdUser"}).
-		Having(orm.And(map[string]interface{}{"COUNT__lte": []interface{}{"ReceivedThread.IdThread", 10},
+		Having(orm.And(map[string]interface{}{"COUNT__in": []interface{}{"ReceivedThread.IdThread", []int{1, 5, 9, 8}},
 			"AVG__gt": []interface{}{"IdUser", 13}})).
 		OrderBy(map[string]interface{}{"bibi": "", "lolo": "DESC", "palopalo": "DESC"}).
 		GroupBy([]string{"ReceivedThread.IdThread", "Koko", "Pipi"})

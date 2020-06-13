@@ -178,15 +178,15 @@ func (sSA *SQLSectionArchitecture) analyseAggregateMode(aggregateFunction string
 			}
 
 			if comparative == "IN" && checkSlice {
-				valueOfVToCompare := valueOfValue.Index(1)
-				if valueOfVToCompare.Type().Kind() == reflect.Slice {
+				valueOfVToCompare := valueOfValue.Index(1).Interface()
+				if reflect.TypeOf(valueOfVToCompare).Kind() == reflect.Slice {
 					sSASub := &SQLSectionArchitecture{mode: "space",
 						isStmts:            true,
 						intermediateString: ",",
-						context:            valueOfVToCompare.Interface()}
+						context:            valueOfVToCompare}
 					sSASub.constructSQlSection()
 
-					sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, columnName, sSASub.SQLSection)
+					sSA.SQLSection = fmt.Sprintf(formats[2], sSA.SQLSection, aggregateFunction, columnName, sSASub.SQLSection)
 					sSA.valuesFromStmts = append(sSA.valuesFromStmts, sSASub.valuesFromStmts...)
 				}
 			}
@@ -245,7 +245,6 @@ func (sSA *SQLSectionArchitecture) setFormatsFromMode() {
 }
 
 func (sSA *SQLSectionArchitecture) constructSQlSection() {
-
 	sSA.setFormatsFromMode()
 
 	switch sSA.context.(type) {
