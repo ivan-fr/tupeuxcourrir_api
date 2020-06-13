@@ -18,6 +18,7 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 	}
 
 	var address []interface{}
+	var subErr error
 	addrFields, err := getAddrFieldsToScan(listModels[0].Model)
 
 	if err == nil {
@@ -27,17 +28,17 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 				listModels = append(listModels,
 					&ModelsScanned{getModelName(relationshipTarget),
 						newModel(relationshipTarget)})
-				address, err = getAddrFieldsToScan(listModels[i+1].Model)
+				address, subErr = getAddrFieldsToScan(listModels[i+1].Model)
 				addrFields = append(addrFields, address...)
 
-				if err != nil {
+				if subErr != nil {
 					break
 				}
 				i++
 			}
 		}
 
-		if err == nil {
+		if subErr == nil {
 			err = scan(addrFields...)
 		}
 	}
