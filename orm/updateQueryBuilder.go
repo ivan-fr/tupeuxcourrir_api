@@ -22,7 +22,7 @@ var singletonUQueryBuilder *UpdateQueryBuilder
 
 func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
 	valueOfRef := reflect.ValueOf(uQB.referenceModel).Elem()
-	var mapFilter = make(map[string]interface{})
+	var mapFilter = make(H)
 
 	for i := 1; i < valueOfRef.NumField(); i++ {
 

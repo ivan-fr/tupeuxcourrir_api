@@ -9,7 +9,7 @@ type QueryApplier struct {
 	model                   interface{}
 	relationshipTargetOrder map[string][]interface{}
 	columns                 []string
-	aggregates              map[string]interface{}
+	aggregates              H
 }
 
 func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) ([]*ModelsScanned, error) {
@@ -70,5 +70,5 @@ func (queryApplier *QueryApplier) addRelationship(fieldName string, relationship
 func (queryApplier *QueryApplier) Clean() {
 	queryApplier.relationshipTargetOrder = make(map[string][]interface{})
 	queryApplier.columns = make([]string, 0)
-	queryApplier.aggregates = make(map[string]interface{})
+	queryApplier.aggregates = make(H)
 }

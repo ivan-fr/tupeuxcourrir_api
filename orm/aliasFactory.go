@@ -28,8 +28,8 @@ func (cAF *ContextAdapterFactory) adaptColumnWithAlias(stringToSplit string, ptr
 	return result
 }
 
-func (cAF *ContextAdapterFactory) adaptMapStringInterface(mapStringInterface map[string]interface{}, aggregate bool) {
-	var mapToMerge = make(map[string]interface{})
+func (cAF *ContextAdapterFactory) adaptMapStringInterface(mapStringInterface H, aggregate bool) {
+	var mapToMerge = make(H)
 
 	for key, aInterface := range mapStringInterface {
 
@@ -74,8 +74,8 @@ func (cAF *ContextAdapterFactory) adaptContext(context interface{}, aggregate bo
 			cAF.adaptColumnWithAlias(valueString, &valueString)
 			sliceString[i] = valueString
 		}
-	case map[string]interface{}:
-		cAF.adaptMapStringInterface(context.(map[string]interface{}), aggregate)
+	case H:
+		cAF.adaptMapStringInterface(context.(H), aggregate)
 	case *Logical:
 		cAF.adaptLogical(context.(*Logical), aggregate)
 	}

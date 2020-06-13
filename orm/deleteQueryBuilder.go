@@ -29,7 +29,7 @@ func (dQB *DeleteQueryBuilder) ConstructSql() string {
 		dQB.SectionWhere)
 }
 
-func (dQB *DeleteQueryBuilder) Where(mapFilter map[string]interface{}) *DeleteQueryBuilder {
+func (dQB *DeleteQueryBuilder) Where(mapFilter H) *DeleteQueryBuilder {
 	sSA := &sQLSectionArchitecture{mode: "setter", isStmts: true, intermediateString: " and", context: mapFilter}
 	sSA.constructSQlSection()
 

@@ -81,7 +81,7 @@ func (sSA *sQLSectionArchitecture) analyseMapStringInterfaceContext() {
 	var columnName string
 
 	var i int
-	for key, value := range sSA.context.(map[string]interface{}) {
+	for key, value := range sSA.context.(H) {
 		if i > 0 {
 			sSA.SQLSection = sSA.SQLSection + " "
 		}
@@ -248,7 +248,7 @@ func (sSA *sQLSectionArchitecture) constructSQlSection() {
 	sSA.setFormatsFromMode()
 
 	switch sSA.context.(type) {
-	case map[string]interface{}:
+	case H:
 		sSA.analyseMapStringInterfaceContext()
 	case []string, []int:
 		sSA.analyseSliceContext()

@@ -2,6 +2,7 @@ package orm
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"tupeuxcourrir_api/db"
 )
@@ -172,7 +173,7 @@ func (sQB *SelectQueryBuilder) addMTM(fieldName string, fieldInterface interface
 	sQB.SectionJoin = append(sQB.SectionJoin, stringJoin)
 }
 
-func (sQB *SelectQueryBuilder) OrderBy(orderFilter map[string]interface{}) *SelectQueryBuilder {
+func (sQB *SelectQueryBuilder) OrderBy(orderFilter H) *SelectQueryBuilder {
 	sQB.aliasFactory.adaptContext(orderFilter, false)
 	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: true, mode: "space", context: orderFilter}
 	sSA.constructSQlSection()
@@ -271,8 +272,8 @@ func (sQB *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
 	return sQB
 }
 
-func (sQB *SelectQueryBuilder) Aggregate(aggregateMap map[string]interface{}) *SelectQueryBuilder {
-	sQB.aggregates = make(map[string]interface{})
+func (sQB *SelectQueryBuilder) Aggregate(aggregateMap H) *SelectQueryBuilder {
+	sQB.aggregates = make(H)
 
 	for key, val := range aggregateMap {
 		sQB.aggregates[key] = val
@@ -298,7 +299,7 @@ func (sQB *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
 	return sQB
 }
 
-func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, error) {
+func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (H, error) {
 	if sQB.SectionSelect == "" && sQB.SectionAggregate == "" {
 		panic("configuration not supported")
 	}
@@ -317,7 +318,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (map[string]interface{}, erro
 
 	err := row.Scan(addrColumnsResult...)
 
-	var mapColumnsResult = make(map[string]interface{})
+	var mapColumnsResult = make(H)
 
 	i := 0
 	for _, value := range sQB.columns {
@@ -367,7 +368,10 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	row := connection.Db.QueryRow(sQB.constructSql(), sQB.getStmts()...)
+	sql := sQB.constructSql()
+	log.Println(sql)
+
+	row := connection.Db.QueryRow(sql, sQB.getStmts()...)
 	modelsList, err := sQB.hydrate(row.Scan)
 
 	return modelsList, err

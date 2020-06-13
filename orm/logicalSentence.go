@@ -15,7 +15,7 @@ func (logical *Logical) factorLogical(interfaces ...interface{}) {
 
 	for _, aInterface := range interfaces {
 		switch aInterface.(type) {
-		case []string, map[string]interface{}:
+		case []string, H:
 			if reflect.ValueOf(aInterface).Len() == 1 {
 				panic("you should use Logical.Single method instead")
 			}
