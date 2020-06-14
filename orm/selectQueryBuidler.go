@@ -210,7 +210,6 @@ func (sQB *SelectQueryBuilder) SetModel(model interface{}) {
 func (sQB *SelectQueryBuilder) Clean() {
 	reflectQueryBuilder := reflect.ValueOf(sQB).Elem()
 
-	fmt.Println(reflectQueryBuilder)
 	for i := 0; i < reflectQueryBuilder.NumField(); i++ {
 		switch reflectQueryBuilder.Field(i).Kind() {
 		case reflect.String:

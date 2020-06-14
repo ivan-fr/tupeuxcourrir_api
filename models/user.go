@@ -1,25 +1,25 @@
 package models
 
 import (
-	"time"
+	"database/sql"
 	"tupeuxcourrir_api/orm"
 )
 
 type User struct {
-	IdUser                   int    `orm:"PK"`
-	Email                    string `form:"email"`
-	EncryptedPassword        string `form:"password"`
-	FirstName                string `form:"firstName"`
-	LastName                 string `form:"lastName"`
-	Pseudo                   string `form:"pseudo"`
-	PhotoPath                string
-	City                     string `form:"city"`
-	Street                   string `form:"street"`
-	PostalCode               string `form:"postalCode"`
+	IdUser                   sql.NullInt64 `orm:"PK"`
+	Email                    string        `form:"email"`
+	EncryptedPassword        string        `form:"password"`
+	FirstName                string        `form:"firstName"`
+	LastName                 string        `form:"lastName"`
+	Pseudo                   string        `form:"pseudo"`
+	PhotoPath                sql.NullString
+	City                     sql.NullString `form:"city"`
+	Street                   sql.NullString `form:"street"`
+	PostalCode               sql.NullString `form:"postalCode"`
 	CheckedEmail             bool
-	SentValidateMailAt       time.Time
-	SentChangePasswordMailAt time.Time
-	CreatedAt                time.Time
+	SentValidateMailAt       sql.NullTime
+	SentChangePasswordMailAt sql.NullTime
+	CreatedAt                sql.NullTime
 	Roles                    *orm.ManyToManyRelationShip
 	InitiatedThread          *orm.OneToManyRelationShip
 	ReceivedThread           *orm.OneToManyRelationShip

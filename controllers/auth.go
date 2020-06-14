@@ -52,7 +52,7 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	user := mapUser["User"].(models.User)
+	user := mapUser["User"].(*models.User)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword),
 		[]byte(ctx.PostForm("password"))); err != nil {
@@ -63,9 +63,9 @@ func Login(ctx *gin.Context) {
 	expirationTime := time.Now().Add(1 * time.Hour)
 
 	claims := jwt.MapClaims{"userId": user.IdUser, "exp": expirationTime.Unix()}
-	instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	token, errToken := instantiateClaims.SignedString("my_secret")
+	token, errToken := instantiateClaims.SignedString([]byte("mySecret"))
 
 	if errToken != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{})
