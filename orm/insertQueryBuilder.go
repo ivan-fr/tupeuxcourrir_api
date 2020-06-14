@@ -15,12 +15,10 @@ type InsertQueryBuilder struct {
 	stmt           []interface{}
 }
 
-var singletonIQueryBuilder *InsertQueryBuilder
-
 func (iQB *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
 	valueOfModel := reflect.ValueOf(modelValue).Elem()
 
-	var listToInsert = make([]interface{}, 0)
+	var sliceToInsert = make([]interface{}, 0)
 
 	for j := 1; j < valueOfModel.NumField(); j++ {
 		if !isRelationshipField(valueOfModel.Field(j)) {
@@ -29,26 +27,34 @@ func (iQB *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{
 			if okTime {
 				switch {
 				case strings.Contains(valueOfModel.Type().Field(j).Name, "CreatedAt"):
-					listToInsert = append(listToInsert, "Now()")
+					sliceToInsert = append(sliceToInsert, "Now()")
 				case fieldTime.IsZero():
-					listToInsert = append(listToInsert, nil)
+					sliceToInsert = append(sliceToInsert, nil)
 				default:
-					listToInsert = append(listToInsert, fieldTime.Format("YYYY-MM-DD HH:MM:SS"))
+					sliceToInsert = append(sliceToInsert, fieldTime.Format("YYYY-MM-DD HH:MM:SS"))
 				}
 			} else {
 				switch valueOfModel.Field(j).Kind() {
 				case reflect.String:
-					listToInsert = append(listToInsert, valueOfModel.Field(j).String())
+					str := valueOfModel.Field(j).String()
+
+					if str == "" {
+						sliceToInsert = append(sliceToInsert, nil)
+					} else {
+						sliceToInsert = append(sliceToInsert, str)
+					}
 				case reflect.Int:
-					listToInsert = append(listToInsert, valueOfModel.Field(j).Int())
+					sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Int())
+				case reflect.Bool:
+					sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Bool())
 				default:
-					panic("unsupported kind of field")
+					panic(valueOfModel.Field(j).Kind())
 				}
 			}
 		}
 	}
 
-	sSA := &sQLSectionArchitecture{mode: "space", isStmts: true, intermediateString: ",", context: listToInsert}
+	sSA := &sQLSectionArchitecture{mode: "space", isStmts: true, intermediateString: ",", context: sliceToInsert}
 	sSA.constructSQlSection()
 
 	iQB.stmt = append(iQB.stmt, sSA.valuesFromStmts...)
@@ -118,6 +124,7 @@ func (iQB *InsertQueryBuilder) SetReferenceModel(model interface{}) *InsertQuery
 
 func (iQB *InsertQueryBuilder) Clean() {
 	iQB.modelValues = nil
+	iQB.stmt = nil
 }
 
 func (iQB *InsertQueryBuilder) ApplyInsert() (sql.Result, error) {
@@ -126,12 +133,9 @@ func (iQB *InsertQueryBuilder) ApplyInsert() (sql.Result, error) {
 	return connection.Db.Exec(iQB.constructSql(), iQB.stmt...)
 }
 
-func GetInsertQueryBuilder(model interface{}, modelsValues []interface{}) *InsertQueryBuilder {
-	if singletonIQueryBuilder == nil {
-		singletonIQueryBuilder = &InsertQueryBuilder{}
-	}
-
-	singletonIQueryBuilder.SetReferenceModel(model)
-	singletonIQueryBuilder.modelValues = modelsValues
-	return singletonIQueryBuilder
+func GetInsertQueryBuilder(model interface{}, modelsValues ...interface{}) *InsertQueryBuilder {
+	iQB := &InsertQueryBuilder{}
+	iQB.SetReferenceModel(model)
+	iQB.modelValues = modelsValues
+	return iQB
 }

@@ -226,6 +226,9 @@ func (sSA *sQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) 
 	case int:
 		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "?")
 		sSA.addStmt(value.(int))
+	case bool:
+		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "?")
+		sSA.addStmt(value.(bool))
 	default:
 		panic("undefined type from space")
 	}
@@ -250,7 +253,7 @@ func (sSA *sQLSectionArchitecture) constructSQlSection() {
 	switch sSA.context.(type) {
 	case H:
 		sSA.analyseMapStringInterfaceContext()
-	case []string, []int:
+	case []interface{}, []string, []int:
 		sSA.analyseSliceContext()
 	default:
 		panic("undefined context type")

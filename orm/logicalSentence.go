@@ -2,7 +2,6 @@ package orm
 
 import (
 	"fmt"
-	"reflect"
 )
 
 type Logical struct {
@@ -16,12 +15,8 @@ func (logical *Logical) factorLogical(interfaces ...interface{}) {
 	for _, aInterface := range interfaces {
 		switch aInterface.(type) {
 		case []string, H:
-			if reflect.ValueOf(aInterface).Len() == 1 {
-				panic("you should use Logical.Single method instead")
-			}
-
 			if usedMultipleLogical {
-				panic("only one []string or map[string]interface{}")
+				panic("only one []string xor map[string]interface{}")
 			} else {
 				usedMultipleLogical = true
 			}

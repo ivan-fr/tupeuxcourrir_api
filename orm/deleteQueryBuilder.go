@@ -12,8 +12,6 @@ type DeleteQueryBuilder struct {
 	SectionWhereStmt []interface{}
 }
 
-var singletonDQueryBuilder *DeleteQueryBuilder
-
 func (dQB *DeleteQueryBuilder) ConstructSql() string {
 	var theSql = fmt.Sprintf("DELETE FROM %v",
 		getTableName(getModelName(dQB.referenceModel)))
@@ -48,6 +46,7 @@ func (dQB *DeleteQueryBuilder) SetReferenceModel(model interface{}) *DeleteQuery
 
 func (dQB *DeleteQueryBuilder) Clean() {
 	dQB.SectionWhere = ""
+	dQB.SectionWhereStmt = nil
 }
 
 func (dQB *DeleteQueryBuilder) ApplyDelete() (sql.Result, error) {
@@ -56,10 +55,7 @@ func (dQB *DeleteQueryBuilder) ApplyDelete() (sql.Result, error) {
 }
 
 func GetDeleteQueryBuilder(model interface{}) *DeleteQueryBuilder {
-	if singletonDQueryBuilder == nil {
-		singletonDQueryBuilder = &DeleteQueryBuilder{}
-	}
-
-	singletonDQueryBuilder.SetReferenceModel(model)
-	return singletonDQueryBuilder
+	dQB := &DeleteQueryBuilder{}
+	dQB.SetReferenceModel(model)
+	return dQB
 }

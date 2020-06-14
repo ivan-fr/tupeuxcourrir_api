@@ -18,8 +18,6 @@ type UpdateQueryBuilder struct {
 	SectionSetStmt []interface{}
 }
 
-var singletonUQueryBuilder *UpdateQueryBuilder
-
 func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
 	valueOfRef := reflect.ValueOf(uQB.referenceModel).Elem()
 	var mapFilter = make(H)
@@ -87,6 +85,8 @@ func (uQB *UpdateQueryBuilder) SetReferenceModel(model interface{}) *UpdateQuery
 func (uQB *UpdateQueryBuilder) Clean() {
 	uQB.SectionWhere = ""
 	uQB.SectionSet = ""
+	uQB.SectionWhereStmt = nil
+	uQB.SectionSetStmt = nil
 }
 
 func (uQB *UpdateQueryBuilder) GetStmts() []interface{} {
@@ -102,10 +102,7 @@ func (uQB *UpdateQueryBuilder) ApplyUpdate() (sql.Result, error) {
 }
 
 func GetUpdateQueryBuilder(model interface{}) *UpdateQueryBuilder {
-	if singletonUQueryBuilder == nil {
-		singletonUQueryBuilder = &UpdateQueryBuilder{}
-	}
-
-	singletonUQueryBuilder.SetReferenceModel(model)
-	return singletonUQueryBuilder
+	uQB := &UpdateQueryBuilder{}
+	uQB.SetReferenceModel(model)
+	return uQB
 }

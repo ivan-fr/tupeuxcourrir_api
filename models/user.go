@@ -6,17 +6,16 @@ import (
 )
 
 type User struct {
-	IdUser                   int `orm:"PK"`
-	Email                    string
-	EncryptedPassword        string
-	Salt                     string
-	FirstName                string
-	LastName                 string
-	Pseudo                   string
+	IdUser                   int    `orm:"PK"`
+	Email                    string `form:"email"`
+	EncryptedPassword        string `form:"password"`
+	FirstName                string `form:"firstName"`
+	LastName                 string `form:"lastName"`
+	Pseudo                   string `form:"pseudo"`
 	PhotoPath                string
-	City                     string
-	Street                   string
-	PostalCode               string
+	City                     string `form:"city"`
+	Street                   string `form:"street"`
+	PostalCode               string `form:"postalCode"`
 	CheckedEmail             bool
 	SentValidateMailAt       time.Time
 	SentChangePasswordMailAt time.Time
@@ -30,6 +29,7 @@ func NewUser() *User {
 	usersRoles := NewUsersRole()
 	thread := NewThread()
 	user := User{}
+
 	user.Roles = &orm.ManyToManyRelationShip{Target: &Role{}, IntermediateTarget: usersRoles}
 	user.InitiatedThread = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "InitiatorThread"}
 	user.ReceivedThread = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "ReceiverThread"}

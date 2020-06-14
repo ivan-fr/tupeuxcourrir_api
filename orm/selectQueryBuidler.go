@@ -34,8 +34,6 @@ type SelectQueryBuilder struct {
 	RollUp bool
 }
 
-var singletonSQueryBuilder *SelectQueryBuilder
-
 func (sQB *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName string) string {
 	reflectValueOf := reflect.ValueOf(sQB.relationshipTargetOrder)
 	relationshipTargets := reflectValueOf.MapIndex(reflect.ValueOf(fieldRelationshipName))
@@ -212,6 +210,7 @@ func (sQB *SelectQueryBuilder) SetModel(model interface{}) {
 func (sQB *SelectQueryBuilder) Clean() {
 	reflectQueryBuilder := reflect.ValueOf(sQB).Elem()
 
+	fmt.Println(reflectQueryBuilder)
 	for i := 0; i < reflectQueryBuilder.NumField(); i++ {
 		switch reflectQueryBuilder.Field(i).Kind() {
 		case reflect.String:
@@ -334,7 +333,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (H, error) {
 	return mapColumnsResult, err
 }
 
-func (sQB *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
+func (sQB *SelectQueryBuilder) ApplyQuery() ([]H, error) {
 	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
 		panic("configuration not supported")
 	}
@@ -342,11 +341,11 @@ func (sQB *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	var modelsMatrix [][]*ModelsScanned
+	var modelsMatrix []H
 	rows, err := connection.Db.Query(sQB.constructSql(), sQB.getStmts()...)
 
 	if err == nil {
-		var modelsList []*ModelsScanned
+		var modelsList H
 		for rows.Next() {
 			modelsList, err = sQB.hydrate(rows.Scan)
 
@@ -360,7 +359,7 @@ func (sQB *SelectQueryBuilder) ApplyQuery() ([][]*ModelsScanned, error) {
 	return modelsMatrix, err
 }
 
-func (sQB *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
+func (sQB *SelectQueryBuilder) ApplyQueryRow() (H, error) {
 	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
 		panic("configuration not supported")
 	}
@@ -372,17 +371,14 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() ([]*ModelsScanned, error) {
 	log.Println(sql)
 
 	row := connection.Db.QueryRow(sql, sQB.getStmts()...)
-	modelsList, err := sQB.hydrate(row.Scan)
+	theMap, err := sQB.hydrate(row.Scan)
 
-	return modelsList, err
+	return theMap, err
 }
 
 func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
-	if singletonIQueryBuilder == nil {
-		singletonSQueryBuilder = &SelectQueryBuilder{}
-		singletonSQueryBuilder.aliasFactory = &ContextAdapterFactory{getAliasFunc: singletonSQueryBuilder.getAlias}
-	}
-
-	singletonSQueryBuilder.SetModel(model)
-	return singletonSQueryBuilder
+	sQB := &SelectQueryBuilder{}
+	sQB.aliasFactory = &ContextAdapterFactory{getAliasFunc: sQB.getAlias}
+	sQB.SetModel(model)
+	return sQB
 }

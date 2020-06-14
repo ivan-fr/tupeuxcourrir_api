@@ -1,9 +1,6 @@
 package orm
 
-type ModelsScanned struct {
-	ModelName string
-	Model     interface{}
-}
+import "fmt"
 
 type QueryApplier struct {
 	model                   interface{}
@@ -12,23 +9,21 @@ type QueryApplier struct {
 	aggregates              H
 }
 
-func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) ([]*ModelsScanned, error) {
-	var listModels = []*ModelsScanned{
-		{getModelName(queryApplier.model), newModel(queryApplier.model)},
+func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) (H, error) {
+	var theMap = H{
+		getModelName(queryApplier.model): newModel(queryApplier.model),
 	}
 
 	var address []interface{}
 	var subErr error
-	addrFields, err := getAddrFieldsToScan(listModels[0].Model)
+	addrFields, err := getAddrFieldsToScan(theMap[getModelName(queryApplier.model)])
 
 	if err == nil {
 		i := 0
-		for _, relationshipTargets := range queryApplier.relationshipTargetOrder {
-			for _, relationshipTarget := range relationshipTargets {
-				listModels = append(listModels,
-					&ModelsScanned{getModelName(relationshipTarget),
-						newModel(relationshipTarget)})
-				address, subErr = getAddrFieldsToScan(listModels[i+1].Model)
+		for fieldName, relationshipTargets := range queryApplier.relationshipTargetOrder {
+			for j, relationshipTarget := range relationshipTargets {
+				theMap[fmt.Sprintf("%v_%v", fieldName, j)] = newModel(relationshipTarget)
+				address, subErr = getAddrFieldsToScan(theMap[fmt.Sprintf("%v_%v", fieldName, j)])
 				addrFields = append(addrFields, address...)
 
 				if subErr != nil {
@@ -43,7 +38,7 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 		}
 	}
 
-	return listModels, err
+	return theMap, err
 }
 
 func (queryApplier *QueryApplier) addRelationship(fieldName string, relationship interface{}) bool {
