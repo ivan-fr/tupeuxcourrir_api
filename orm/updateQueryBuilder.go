@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -61,10 +62,12 @@ func (uQB *UpdateQueryBuilder) ConstructSql() string {
 
 	addPrefixToSections(uQB, " ", 0)
 
-	return fmt.Sprintf("%v%v%v;",
+	_sql := fmt.Sprintf("%v%v%v;",
 		theSql,
 		uQB.SectionSet,
 		uQB.SectionWhere)
+	log.Println(_sql)
+	return _sql
 }
 
 func (uQB *UpdateQueryBuilder) Where(logical *Logical) *UpdateQueryBuilder {

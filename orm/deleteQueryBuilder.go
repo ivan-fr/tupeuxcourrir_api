@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"tupeuxcourrir_api/db"
 )
 
@@ -22,9 +23,11 @@ func (dQB *DeleteQueryBuilder) ConstructSql() string {
 
 	addPrefixToSections(dQB, " ", 0)
 
-	return fmt.Sprintf("%v%v;",
+	_sql := fmt.Sprintf("%v%v;",
 		theSql,
 		dQB.SectionWhere)
+	log.Println(_sql)
+	return _sql
 }
 
 func (dQB *DeleteQueryBuilder) Where(mapFilter H) *DeleteQueryBuilder {

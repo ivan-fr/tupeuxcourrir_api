@@ -84,7 +84,7 @@ func (sQB *SelectQueryBuilder) constructSql() string {
 		withRollUp = " WITH ROLLUP"
 	}
 
-	return fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v;",
+	_sql := fmt.Sprintf("%v%v%v%v%v%v%v%v%v%v%v;",
 		sQB.SectionSelect,
 		sQB.SectionAggregate,
 		sQB.SectionFrom,
@@ -96,6 +96,8 @@ func (sQB *SelectQueryBuilder) constructSql() string {
 		sQB.SectionOrder,
 		sQB.SectionLimit,
 		sQB.SectionOffset)
+	log.Println(_sql)
+	return _sql
 }
 
 func (sQB *SelectQueryBuilder) getStmts() []interface{} {
@@ -366,10 +368,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() (H, error) {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	sql := sQB.constructSql()
-	log.Println(sql)
-
-	row := connection.Db.QueryRow(sql, sQB.getStmts()...)
+	row := connection.Db.QueryRow(sQB.constructSql(), sQB.getStmts()...)
 	theMap, err := sQB.hydrate(row.Scan)
 
 	return theMap, err

@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -110,9 +111,11 @@ func (iQB *InsertQueryBuilder) constructSql() string {
 		getTableName(getModelName(iQB.referenceModel)),
 		iQB.getSqlColumnNamesToInsert())
 
-	return fmt.Sprintf("%v %v;",
+	_sql := fmt.Sprintf("%v %v;",
 		theSql,
 		iQB.getSQlValuesToInsert())
+	log.Println(_sql)
+	return _sql
 }
 
 func (iQB *InsertQueryBuilder) SetReferenceModel(model interface{}) *InsertQueryBuilder {

@@ -69,7 +69,7 @@ func Login(ctx *gin.Context) {
 
 	if errToken != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{})
-		log.Fatal(errToken)
+		log.Println(errToken)
 		return
 	}
 
