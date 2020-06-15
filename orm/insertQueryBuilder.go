@@ -16,6 +16,61 @@ type InsertQueryBuilder struct {
 	stmt           []interface{}
 }
 
+func (iQB *InsertQueryBuilder) valueToInsertFromStringCase(str string) interface{} {
+	if str == "" {
+		return nil
+	} else {
+		return str
+	}
+}
+
+func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(fieldName string, time time.Time) interface{} {
+	switch {
+	case strings.Contains(fieldName, "CreatedAt"):
+		return "Now()"
+	case time.IsZero():
+		return nil
+	default:
+		return time.Format("YYYY-MM-DD HH:MM:SS")
+	}
+}
+
+func (iQB *InsertQueryBuilder) valueToInsertFromStructCase(fieldName string, value interface{}) interface{} {
+	switch value.(type) {
+	case sql.NullTime:
+		nullTime := value.(sql.NullTime)
+		if nullTime.Valid {
+			_time, _ := nullTime.Value()
+			return iQB.valueToInsertFromTimeCase(fieldName, _time.(time.Time))
+		}
+	case sql.NullString:
+		nullStr := value.(sql.NullString)
+
+		if nullStr.Valid {
+			_str, _ := nullStr.Value()
+			return iQB.valueToInsertFromStringCase(_str.(string))
+		}
+	case sql.NullInt64:
+		nullInt := value.(sql.NullInt64)
+
+		if nullInt.Valid {
+			_int, _ := nullInt.Value()
+			return _int.(int)
+		}
+	case sql.NullBool:
+		nullBool := value.(sql.NullBool)
+
+		if nullBool.Valid {
+			_bool, _ := nullBool.Value()
+			return _bool.(bool)
+		}
+	default:
+		panic("only accept sql.Null* for struct Time")
+	}
+
+	return nil
+}
+
 func (iQB *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{}) string {
 	valueOfModel := reflect.ValueOf(modelValue).Elem()
 
@@ -26,28 +81,21 @@ func (iQB *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{
 			var fieldTime, okTime = valueOfModel.Field(j).Interface().(time.Time)
 
 			if okTime {
-				switch {
-				case strings.Contains(valueOfModel.Type().Field(j).Name, "CreatedAt"):
-					sliceToInsert = append(sliceToInsert, "Now()")
-				case fieldTime.IsZero():
-					sliceToInsert = append(sliceToInsert, nil)
-				default:
-					sliceToInsert = append(sliceToInsert, fieldTime.Format("YYYY-MM-DD HH:MM:SS"))
-				}
+				sliceToInsert = append(sliceToInsert, iQB.valueToInsertFromTimeCase(
+					valueOfModel.Type().Field(j).Name, fieldTime))
 			} else {
 				switch valueOfModel.Field(j).Kind() {
 				case reflect.String:
-					str := valueOfModel.Field(j).String()
-
-					if str == "" {
-						sliceToInsert = append(sliceToInsert, nil)
-					} else {
-						sliceToInsert = append(sliceToInsert, str)
-					}
+					sliceToInsert = append(sliceToInsert,
+						iQB.valueToInsertFromStringCase(valueOfModel.Field(j).String()))
 				case reflect.Int:
 					sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Int())
 				case reflect.Bool:
 					sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Bool())
+				case reflect.Struct:
+					sliceToInsert = append(sliceToInsert,
+						iQB.valueToInsertFromStructCase(valueOfModel.Type().Field(j).Name,
+							valueOfModel.Field(j).Interface()))
 				default:
 					panic(valueOfModel.Field(j).Kind())
 				}
@@ -71,7 +119,7 @@ func (iQB *InsertQueryBuilder) getSQlValuesToInsert() string {
 
 		switch {
 		case 0 == i:
-			theSql = fmt.Sprintf("%v %v", theSql, sectionValues)
+			theSql = fmt.Sprintf("%v", sectionValues)
 		case 1 <= i && i <= (len(iQB.modelValues)-1):
 			theSql = fmt.Sprintf("%v, %v", theSql, sectionValues)
 		}
