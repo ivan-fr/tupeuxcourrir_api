@@ -72,7 +72,7 @@ func (iQB *InsertQueryBuilder) valueToInsertFromStructCase(fieldName string, val
 			return _bool.(bool)
 		}
 	default:
-		panic("only accept sql.Null* for struct Time")
+		panic("only accept sql.Null* for struct")
 	}
 
 	return nil

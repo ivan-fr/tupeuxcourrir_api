@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"tupeuxcourrir_api/forms"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 )
@@ -16,7 +17,8 @@ func jsonErrorFormat(err error) gin.H {
 }
 
 func SignUp(context *gin.Context) {
-	var form models.User
+	var form forms.SignUpForm
+	var user models.User
 
 	if err := context.ShouldBind(&form); err != nil {
 		context.JSON(http.StatusBadRequest, jsonErrorFormat(err))
@@ -28,9 +30,11 @@ func SignUp(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, jsonErrorFormat(err))
 		return
 	}
+
 	form.EncryptedPassword = string(hash)
 
-	iQB := orm.GetInsertQueryBuilder(models.NewUser(), &form)
+	orm.BindForm(&user, &form)
+	iQB := orm.GetInsertQueryBuilder(models.NewUser(), &user)
 
 	if _, err := iQB.ApplyInsert(); err != nil {
 		context.JSON(http.StatusBadRequest, jsonErrorFormat(err))

@@ -6,16 +6,16 @@ import (
 )
 
 type User struct {
-	IdUser                   sql.NullInt64 `orm:"PK"`
-	Email                    string        `form:"email"`
-	EncryptedPassword        string        `form:"password"`
-	FirstName                string        `form:"firstName"`
-	LastName                 string        `form:"lastName"`
-	Pseudo                   string        `form:"pseudo"`
+	IdUser                   int `orm:"PK"`
+	Email                    string
+	EncryptedPassword        string
+	FirstName                sql.NullString
+	LastName                 string
+	Pseudo                   string
 	PhotoPath                sql.NullString
-	City                     sql.NullString `form:"city"`
-	Street                   sql.NullString `form:"street"`
-	PostalCode               sql.NullString `form:"postalCode"`
+	City                     sql.NullString
+	Street                   sql.NullString
+	PostalCode               sql.NullString
 	CheckedEmail             bool
 	SentValidateMailAt       sql.NullTime
 	SentChangePasswordMailAt sql.NullTime
