@@ -98,7 +98,7 @@ func (sSA *sQLSectionArchitecture) analyseMapStringInterfaceContext() {
 		}
 
 		switch sSA.mode {
-		case "setter":
+		case "setter", "fullSetter":
 			sSA.analyseSetterMode(columnName, value, comparative, effectiveFormat)
 		case "aggregate":
 			sSA.analyseAggregateMode(columnName, value, comparative, effectiveFormat)
@@ -131,7 +131,9 @@ func (sSA *sQLSectionArchitecture) analyseSetterMode(columnName string, value in
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, "?")
 		sSA.addStmt(value.(bool))
 	case nil:
-		formats[0] = strings.Replace(formats[0], "=", "IS", 1)
+		if sSA.mode == "setter" {
+			formats[0] = strings.Replace(formats[0], "=", "IS", 1)
+		}
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, "NULL")
 	default:
 		checkSlice = true
@@ -236,7 +238,7 @@ func (sSA *sQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) 
 
 func (sSA *sQLSectionArchitecture) setFormatsFromMode() {
 	switch sSA.mode {
-	case "setter":
+	case "setter", "fullSetter":
 		sSA.formats = []string{".. %v .", ".. %v (.)"}
 	case "space":
 		sSA.formats = []string{"%v%v %v", "%v%v"}

@@ -19,30 +19,86 @@ type UpdateQueryBuilder struct {
 	SectionSetStmt []interface{}
 }
 
+func (uQB *UpdateQueryBuilder) valueToInsertFromStringCase(str string) interface{} {
+	if str == "" {
+		return nil
+	} else {
+		return str
+	}
+}
+
+func (uQB *UpdateQueryBuilder) valueToInsertFromTimeCase(time time.Time) interface{} {
+	switch {
+	case time.IsZero():
+		return nil
+	default:
+		return time.Format("yyyy-MM-dd HH:mm:ss")
+	}
+}
+
+func (uQB *UpdateQueryBuilder) valueToInsertFromStructCase(fieldName string, value interface{}) interface{} {
+	switch value.(type) {
+	case time.Time:
+		if strings.Contains(fieldName, "UpdatedAt") {
+			return "Now()"
+		}
+		return uQB.valueToInsertFromTimeCase(value.(time.Time))
+	case sql.NullTime:
+		if strings.Contains(fieldName, "UpdatedAt") {
+			return "Now()"
+		}
+
+		nullTime := value.(sql.NullTime)
+		if nullTime.Valid {
+			_time, _ := nullTime.Value()
+			return uQB.valueToInsertFromTimeCase(_time.(time.Time))
+		}
+	case sql.NullString:
+		nullStr := value.(sql.NullString)
+
+		if nullStr.Valid {
+			_str, _ := nullStr.Value()
+			return uQB.valueToInsertFromStringCase(_str.(string))
+		}
+	case sql.NullInt64:
+		nullInt := value.(sql.NullInt64)
+
+		if nullInt.Valid {
+			_int, _ := nullInt.Value()
+			return _int.(int)
+		}
+	case sql.NullBool:
+		nullBool := value.(sql.NullBool)
+
+		if nullBool.Valid {
+			_bool, _ := nullBool.Value()
+			return _bool.(bool)
+		}
+	default:
+		panic("only accept sql.Null* for struct")
+	}
+
+	return nil
+}
+
 func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
 	valueOfRef := reflect.ValueOf(uQB.referenceModel).Elem()
 	var mapFilter = make(H)
 
-	for i := 1; i < valueOfRef.NumField(); i++ {
-
-		if !isRelationshipField(valueOfRef.Field(i)) {
-			timeField, okTime := valueOfRef.Field(i).Interface().(time.Time)
-			if okTime {
-				switch {
-				case strings.Contains(valueOfRef.Type().Field(i).Name, "UpdatedAt"):
-					mapFilter[valueOfRef.Type().Field(i).Name] = "Now()"
-				case timeField.IsZero():
-					mapFilter[valueOfRef.Type().Field(i).Name] = nil
-				default:
-					mapFilter[valueOfRef.Type().Field(i).Name] = timeField.Format("YYYY-MM-DD HH:MM:SS")
-				}
-			} else {
-				mapFilter[valueOfRef.Type().Field(i).Name] = valueOfRef.Field(i).Interface()
+	for j := 1; j < valueOfRef.NumField(); j++ {
+		if !isRelationshipField(valueOfRef.Field(j)) {
+			switch valueOfRef.Field(j).Kind() {
+			case reflect.Struct:
+				mapFilter[valueOfRef.Type().Field(j).Name] = uQB.valueToInsertFromStructCase(
+					valueOfRef.Type().Field(j).Name,
+					valueOfRef.Field(j).Interface())
+			default:
+				mapFilter[valueOfRef.Type().Field(j).Name] = valueOfRef.Field(j).Interface()
 			}
 		}
 	}
 
-	sSA := &sQLSectionArchitecture{mode: "setter", intermediateString: ",", context: mapFilter, isStmts: true}
+	sSA := &sQLSectionArchitecture{mode: "fullSetter", intermediateString: ",", context: mapFilter, isStmts: true}
 	sSA.constructSQlSection()
 	uQB.SectionSetStmt = sSA.valuesFromStmts
 	uQB.SectionSet = fmt.Sprintf("SET %v", sSA.SQLSection)

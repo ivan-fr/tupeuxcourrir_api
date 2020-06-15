@@ -29,7 +29,7 @@ func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(time time.Time) interfa
 	case time.IsZero():
 		return nil
 	default:
-		return time.Format("YYYY-MM-DD HH:MM:SS")
+		return time.Format("yyyy-MM-dd HH:mm:ss")
 	}
 }
 

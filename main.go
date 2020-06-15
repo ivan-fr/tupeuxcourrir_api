@@ -13,6 +13,7 @@ func main() {
 
 	router.POST("/signUp", controllers.SignUp)
 	router.POST("/login", controllers.Login)
+	router.POST("/forgotPassword", controllers.ForgotPassword)
 
 	_ = router.Run()
 }

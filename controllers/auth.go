@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"database/sql"
+	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"net/smtp"
 	"time"
 	"tupeuxcourrir_api/forms"
 	"tupeuxcourrir_api/models"
@@ -87,4 +90,65 @@ func Login(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func ForgotPassword(ctx *gin.Context) {
+	var forgotPasswordForm forms.ForgotPasswordForm
+
+	if err := ctx.ShouldBind(&forgotPasswordForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		return
+	}
+
+	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
+		Where(orm.And(orm.H{"Email": forgotPasswordForm.Email}))
+
+	mapUser, err := sQB.ApplyQueryRow()
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		return
+	}
+
+	user := mapUser["User"].(*models.User)
+
+	var execute = true
+
+	switch {
+	case user.SentChangePasswordMailAt.Valid:
+		var predictionTime time.Time
+		_ = user.SentChangePasswordMailAt.Scan(&predictionTime)
+		predictionTime = predictionTime.Add(15 * time.Minute)
+		nowTime := time.Now()
+		execute = predictionTime.After(nowTime)
+	}
+
+	if execute {
+		expirationTime := time.Now().Add(15 * time.Minute)
+		claims := jwt.MapClaims{"userId": user.IdUser, "expireAt": expirationTime.Unix()}
+		instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+		token, _ := instantiateClaims.SignedString([]byte("mySecret"))
+
+		to := []string{user.Email}
+		msg := []byte(token)
+		err := smtp.SendMail("smtp.gmail.com:587", utils.GetAuthMailer(), "tupeuxcourrir@gmail.com", to, msg)
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			user.SentChangePasswordMailAt = sql.NullTime{Time: time.Now(), Valid: true}
+			uQB := orm.GetUpdateQueryBuilder(user).Where(orm.And(orm.H{"IDUser": user.IdUser}))
+			_, errSub := uQB.ApplyUpdate()
+			if errSub != nil {
+				log.Fatal(errSub)
+			} else {
+				ctx.JSON(http.StatusOK, gin.H{})
+				return
+			}
+		}
+	} else {
+		err := errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
+		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		return
+	}
 }
