@@ -116,11 +116,11 @@ func ForgotPassword(ctx *gin.Context) {
 
 	switch {
 	case user.SentChangePasswordMailAt.Valid:
-		var predictionTime time.Time
-		_ = user.SentChangePasswordMailAt.Scan(&predictionTime)
-		predictionTime = predictionTime.Add(15 * time.Minute)
+		val, _ := user.SentChangePasswordMailAt.Value()
+		predictionTime := val.(time.Time).Add(15 * time.Minute)
 		nowTime := time.Now()
-		execute = predictionTime.After(nowTime)
+
+		execute = predictionTime.Before(nowTime)
 	}
 
 	if execute {

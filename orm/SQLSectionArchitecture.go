@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type sQLSectionArchitecture struct {
@@ -135,6 +136,9 @@ func (sSA *sQLSectionArchitecture) analyseSetterMode(columnName string, value in
 			formats[0] = strings.Replace(formats[0], "=", "IS", 1)
 		}
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, "NULL")
+	case time.Time:
+		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, "?")
+		sSA.addStmt(value.(time.Time))
 	default:
 		checkSlice = true
 	}
@@ -175,6 +179,9 @@ func (sSA *sQLSectionArchitecture) analyseAggregateMode(aggregateFunction string
 			case string:
 				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
 				sSA.addStmt(vToCompare.(string))
+			case time.Time:
+				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
+				sSA.addStmt(value.(time.Time))
 			default:
 				checkSlice = true
 			}
@@ -231,6 +238,9 @@ func (sSA *sQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) 
 	case bool:
 		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "?")
 		sSA.addStmt(value.(bool))
+	case time.Time:
+		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "?")
+		sSA.addStmt(value.(time.Time))
 	default:
 		panic("undefined type from space")
 	}

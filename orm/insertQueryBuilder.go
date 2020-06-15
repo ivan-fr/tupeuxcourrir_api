@@ -24,12 +24,12 @@ func (iQB *InsertQueryBuilder) valueToInsertFromStringCase(str string) interface
 	}
 }
 
-func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(time time.Time) interface{} {
+func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(_time time.Time) interface{} {
 	switch {
-	case time.IsZero():
+	case _time.IsZero():
 		return nil
 	default:
-		return time.Format("yyyy-MM-dd HH:mm:ss")
+		return _time.Format(time.RFC3339)
 	}
 }
 
