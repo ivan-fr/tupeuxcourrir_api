@@ -1,10 +1,8 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -15,33 +13,18 @@ import (
 	"tupeuxcourrir_api/utils"
 )
 
-func jsonErrorFormat(err error) gin.H {
-	var sliceStr []string
-	if _, ok := err.(validator.ValidationErrors); ok {
-		for _, fieldErr := range err.(validator.ValidationErrors) {
-			sliceStr = append(sliceStr, fmt.Sprint(&utils.FieldError{Err: fieldErr}))
-		}
-	}
-
-	if sliceStr == nil {
-		return gin.H{"error": err.Error()}
-	}
-
-	return gin.H{"error": sliceStr}
-}
-
 func SignUp(context *gin.Context) {
 	var form forms.SignUpForm
 	var user models.User
 
 	if err := context.ShouldBind(&form); err != nil {
-		context.JSON(http.StatusBadRequest, jsonErrorFormat(err))
+		context.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, jsonErrorFormat(err))
+		context.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 		return
 	}
 
@@ -51,7 +34,7 @@ func SignUp(context *gin.Context) {
 	iQB := orm.GetInsertQueryBuilder(models.NewUser(), &user)
 
 	if _, err := iQB.ApplyInsert(); err != nil {
-		context.JSON(http.StatusBadRequest, jsonErrorFormat(err))
+		context.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 		return
 	}
 
@@ -60,27 +43,39 @@ func SignUp(context *gin.Context) {
 }
 
 func Login(ctx *gin.Context) {
+	var loginForm forms.LoginForm
+
+	if err := ctx.ShouldBind(&loginForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		return
+	}
+
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
-		Where(orm.And(orm.H{"Email": ctx.PostForm("email")}))
+		Where(orm.And(orm.H{"Email": loginForm.Email}))
 
 	mapUser, err := sQB.ApplyQueryRow()
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, jsonErrorFormat(err))
+		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 		return
 	}
 
 	user := mapUser["User"].(*models.User)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword),
-		[]byte(ctx.PostForm("password"))); err != nil {
-		ctx.JSON(http.StatusBadRequest, jsonErrorFormat(err))
+		[]byte(loginForm.EncryptedPassword)); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 		return
 	}
 
-	expirationTime := time.Now().Add(1 * time.Hour)
+	var expirationTime time.Time
+	if loginForm.SaveConnection {
+		expirationTime = time.Now().Add(1 * time.Hour)
+	} else {
+		expirationTime = time.Now().Add(5 * time.Hour)
+	}
 
-	claims := jwt.MapClaims{"userId": user.IdUser, "exp": expirationTime.Unix()}
+	claims := jwt.MapClaims{"userId": user.IdUser, "expireAt": expirationTime.Unix()}
 	instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	token, errToken := instantiateClaims.SignedString([]byte("mySecret"))
