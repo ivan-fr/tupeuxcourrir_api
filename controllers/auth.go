@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -10,10 +12,22 @@ import (
 	"tupeuxcourrir_api/forms"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
+	"tupeuxcourrir_api/utils"
 )
 
 func jsonErrorFormat(err error) gin.H {
-	return gin.H{"error": err.Error()}
+	var sliceStr []string
+	if _, ok := err.(validator.ValidationErrors); ok {
+		for _, fieldErr := range err.(validator.ValidationErrors) {
+			sliceStr = append(sliceStr, fmt.Sprint(&utils.FieldError{Err: fieldErr}))
+		}
+	}
+
+	if sliceStr == nil {
+		return gin.H{"error": err.Error()}
+	}
+
+	return gin.H{"error": sliceStr}
 }
 
 func SignUp(context *gin.Context) {
