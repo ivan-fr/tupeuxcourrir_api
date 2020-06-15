@@ -24,10 +24,8 @@ func (iQB *InsertQueryBuilder) valueToInsertFromStringCase(str string) interface
 	}
 }
 
-func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(fieldName string, time time.Time) interface{} {
+func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(time time.Time) interface{} {
 	switch {
-	case strings.Contains(fieldName, "CreatedAt"):
-		return "Now()"
 	case time.IsZero():
 		return nil
 	default:
@@ -37,11 +35,20 @@ func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(fieldName string, time 
 
 func (iQB *InsertQueryBuilder) valueToInsertFromStructCase(fieldName string, value interface{}) interface{} {
 	switch value.(type) {
+	case time.Time:
+		if strings.Contains(fieldName, "CreatedAt") {
+			return "Now()"
+		}
+		return iQB.valueToInsertFromTimeCase(value.(time.Time))
 	case sql.NullTime:
+		if strings.Contains(fieldName, "CreatedAt") {
+			return "Now()"
+		}
+
 		nullTime := value.(sql.NullTime)
 		if nullTime.Valid {
 			_time, _ := nullTime.Value()
-			return iQB.valueToInsertFromTimeCase(fieldName, _time.(time.Time))
+			return iQB.valueToInsertFromTimeCase(_time.(time.Time))
 		}
 	case sql.NullString:
 		nullStr := value.(sql.NullString)
@@ -78,27 +85,20 @@ func (iQB *InsertQueryBuilder) getSQLSectionValuesToInsert(modelValue interface{
 
 	for j := 1; j < valueOfModel.NumField(); j++ {
 		if !isRelationshipField(valueOfModel.Field(j)) {
-			var fieldTime, okTime = valueOfModel.Field(j).Interface().(time.Time)
-
-			if okTime {
-				sliceToInsert = append(sliceToInsert, iQB.valueToInsertFromTimeCase(
-					valueOfModel.Type().Field(j).Name, fieldTime))
-			} else {
-				switch valueOfModel.Field(j).Kind() {
-				case reflect.String:
-					sliceToInsert = append(sliceToInsert,
-						iQB.valueToInsertFromStringCase(valueOfModel.Field(j).String()))
-				case reflect.Int:
-					sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Int())
-				case reflect.Bool:
-					sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Bool())
-				case reflect.Struct:
-					sliceToInsert = append(sliceToInsert,
-						iQB.valueToInsertFromStructCase(valueOfModel.Type().Field(j).Name,
-							valueOfModel.Field(j).Interface()))
-				default:
-					panic(valueOfModel.Field(j).Kind())
-				}
+			switch valueOfModel.Field(j).Kind() {
+			case reflect.String:
+				sliceToInsert = append(sliceToInsert,
+					iQB.valueToInsertFromStringCase(valueOfModel.Field(j).String()))
+			case reflect.Int:
+				sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Int())
+			case reflect.Bool:
+				sliceToInsert = append(sliceToInsert, valueOfModel.Field(j).Bool())
+			case reflect.Struct:
+				sliceToInsert = append(sliceToInsert,
+					iQB.valueToInsertFromStructCase(valueOfModel.Type().Field(j).Name,
+						valueOfModel.Field(j).Interface()))
+			default:
+				panic(valueOfModel.Field(j).Kind())
 			}
 		}
 	}
