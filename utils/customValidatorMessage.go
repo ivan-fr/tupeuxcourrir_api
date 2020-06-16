@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"strings"
 )
@@ -29,7 +28,7 @@ func (fE *FieldError) String() string {
 	return sb.String()
 }
 
-func JsonErrorPattern(err error) gin.H {
+func JsonErrorPattern(err error) map[string]interface{} {
 	var sliceStr []string
 	if _, ok := err.(validator.ValidationErrors); ok {
 		for _, fieldErr := range err.(validator.ValidationErrors) {
@@ -38,8 +37,8 @@ func JsonErrorPattern(err error) gin.H {
 	}
 
 	if sliceStr == nil {
-		return gin.H{"error": err.Error()}
+		return map[string]interface{}{"error": err.Error()}
 	}
 
-	return gin.H{"error": sliceStr}
+	return map[string]interface{}{"error": sliceStr}
 }

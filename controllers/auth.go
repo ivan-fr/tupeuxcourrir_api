@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -16,19 +16,21 @@ import (
 	"tupeuxcourrir_api/utils"
 )
 
-func SignUp(context *gin.Context) {
+func SignUp(ctx echo.Context) error {
 	var form forms.SignUpForm
 	var user models.User
 
-	if err := context.ShouldBind(&form); err != nil {
-		context.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+	if err := ctx.Bind(&form); err != nil {
+		return err
+	}
+
+	if err := ctx.Validate(&form); err != nil {
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
 	form.EncryptedPassword = string(hash)
@@ -37,20 +39,21 @@ func SignUp(context *gin.Context) {
 	iQB := orm.GetInsertQueryBuilder(models.NewUser(), &user)
 
 	if _, err := iQB.ApplyInsert(); err != nil {
-		context.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
-	context.JSON(http.StatusOK, gin.H{})
-	return
+	return ctx.JSON(http.StatusOK, orm.H{})
 }
 
-func Login(ctx *gin.Context) {
+func Login(ctx echo.Context) error {
 	var loginForm forms.LoginForm
 
-	if err := ctx.ShouldBind(&loginForm); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+	if err := ctx.Bind(&loginForm); err != nil {
+		return err
+	}
+
+	if err := ctx.Validate(&loginForm); err != nil {
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
@@ -59,16 +62,14 @@ func Login(ctx *gin.Context) {
 	mapUser, err := sQB.ApplyQueryRow()
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
 	user := mapUser["User"].(*models.User)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword),
 		[]byte(loginForm.EncryptedPassword)); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
 	var expirationTime time.Time
@@ -78,26 +79,27 @@ func Login(ctx *gin.Context) {
 		expirationTime = time.Now().Add(5 * time.Hour)
 	}
 
-	claims := jwt.MapClaims{"userId": user.IdUser, "expireAt": expirationTime.Unix()}
+	claims := jwt.MapClaims{"userId": user.IdUser, "exp": expirationTime.Unix()}
 	instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	token, errToken := instantiateClaims.SignedString([]byte("mySecret"))
 
 	if errToken != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{})
-		log.Println(errToken)
-		return
+		return ctx.JSON(http.StatusInternalServerError, orm.H{})
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"token": token})
+	return ctx.JSON(http.StatusOK, orm.H{"token": token})
 }
 
-func ForgotPassword(ctx *gin.Context) {
+func ForgotPassword(ctx echo.Context) error {
 	var forgotPasswordForm forms.ForgotPasswordForm
 
-	if err := ctx.ShouldBind(&forgotPasswordForm); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+	if err := ctx.Bind(&forgotPasswordForm); err != nil {
+		return err
+	}
+
+	if err := ctx.Validate(&forgotPasswordForm); err != nil {
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
@@ -106,8 +108,7 @@ func ForgotPassword(ctx *gin.Context) {
 	mapUser, err := sQB.ApplyQueryRow()
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
 	user := mapUser["User"].(*models.User)
@@ -132,8 +133,9 @@ func ForgotPassword(ctx *gin.Context) {
 
 		mailer := utils.NewMail([]string{user.Email}, "Change your password", "")
 		err = mailer.ParseTemplate("htmlMail/changePassword.html",
-			gin.H{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName.String),
-				"url": ctx.Request.URL, "token": token})
+			orm.H{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName.String),
+				"host": ctx.Request().Host, "token": token})
+
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -141,21 +143,19 @@ func ForgotPassword(ctx *gin.Context) {
 		err = mailer.SendEmail()
 
 		if err != nil {
-			log.Fatal(err)
+			return err
 		} else {
 			user.SentChangePasswordMailAt = sql.NullTime{Time: time.Now(), Valid: true}
 			uQB := orm.GetUpdateQueryBuilder(user).Where(orm.And(orm.H{"IDUser": user.IdUser}))
 			_, errSub := uQB.ApplyUpdate()
 			if errSub != nil {
-				log.Fatal(errSub)
+				return errSub
 			} else {
-				ctx.JSON(http.StatusOK, gin.H{})
-				return
+				return ctx.JSON(http.StatusOK, orm.H{})
 			}
 		}
 	} else {
 		err := errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
-		ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-		return
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 }

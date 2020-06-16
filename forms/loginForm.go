@@ -1,7 +1,7 @@
 package forms
 
 type LoginForm struct {
-	Email             string `form:"email" binding:"required,email"`
-	EncryptedPassword string `form:"password" binding:"required,min=5"`
+	Email             string `form:"email" validate:"required,email"`
+	EncryptedPassword string `form:"password" validate:"required,min=5"`
 	SaveConnection    bool   `form:"saveConnection"`
 }

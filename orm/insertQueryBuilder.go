@@ -29,7 +29,7 @@ func (iQB *InsertQueryBuilder) valueToInsertFromTimeCase(_time time.Time) interf
 	case _time.IsZero():
 		return nil
 	default:
-		return _time.Format(time.RFC3339)
+		return _time
 	}
 }
 
