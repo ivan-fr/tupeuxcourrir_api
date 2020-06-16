@@ -3,12 +3,12 @@ package controllers
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
-	"net/smtp"
 	"time"
 	"tupeuxcourrir_api/forms"
 	"tupeuxcourrir_api/models"
@@ -130,9 +130,16 @@ func ForgotPassword(ctx *gin.Context) {
 
 		token, _ := instantiateClaims.SignedString([]byte("mySecret"))
 
-		to := []string{user.Email}
-		msg := []byte(token)
-		err := smtp.SendMail("smtp.gmail.com:587", utils.GetAuthMailer(), "tupeuxcourrir@gmail.com", to, msg)
+		mailer := utils.NewMail([]string{user.Email}, "Change your password", "")
+		err = mailer.ParseTemplate("htmlMail/changePassword.html",
+			gin.H{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName.String),
+				"url": ctx.Request.URL, "token": token})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = mailer.SendEmail()
+
 		if err != nil {
 			log.Fatal(err)
 		} else {
