@@ -17,6 +17,9 @@ type UpdateQueryBuilder struct {
 
 	SectionSet     string
 	SectionSetStmt []interface{}
+
+	SectionIncrement     string
+	SectionIncrementStmt []interface{}
 }
 
 func (uQB *UpdateQueryBuilder) valueToInsertFromStringCase(str string) interface{} {
@@ -104,6 +107,16 @@ func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
 	uQB.SectionSet = fmt.Sprintf("SET %v", sSA.SQLSection)
 }
 
+func (uQB *UpdateQueryBuilder) Increment(incrementMap H) *UpdateQueryBuilder {
+	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: true, mode: "increment", context: incrementMap}
+	sSA.constructSQlSection()
+
+	uQB.SectionIncrement = sSA.SQLSection
+	uQB.SectionIncrementStmt = sSA.valuesFromStmts
+
+	return uQB
+}
+
 func (uQB *UpdateQueryBuilder) ConstructSql() string {
 	var theSql = fmt.Sprintf("UPDATE %v",
 		getTableName(getModelName(uQB.referenceModel)))
@@ -118,9 +131,10 @@ func (uQB *UpdateQueryBuilder) ConstructSql() string {
 
 	addPrefixToSections(uQB, " ", 0)
 
-	_sql := fmt.Sprintf("%v%v%v;",
+	_sql := fmt.Sprintf("%v%v%v%v;",
 		theSql,
 		uQB.SectionSet,
+		uQB.SectionIncrement,
 		uQB.SectionWhere)
 	log.Println(_sql)
 	return _sql
@@ -151,6 +165,7 @@ func (uQB *UpdateQueryBuilder) Clean() {
 func (uQB *UpdateQueryBuilder) GetStmts() []interface{} {
 	var stmtsInterface = make([]interface{}, 0)
 	stmtsInterface = append(stmtsInterface, uQB.SectionSetStmt...)
+	stmtsInterface = append(stmtsInterface, uQB.SectionIncrementStmt...)
 	stmtsInterface = append(stmtsInterface, uQB.SectionWhereStmt...)
 	return stmtsInterface
 }

@@ -61,7 +61,7 @@ func (sSA *sQLSectionArchitecture) getComparative(keySplit []string) string {
 func (sSA *sQLSectionArchitecture) getEffectiveFormats(comparative string) []string {
 	sliceToStorage := make([]string, 0)
 
-	if sSA.mode != "space" {
+	if sSA.mode != "space" && sSA.mode != "increment" {
 		for i := range sSA.formats {
 			if strings.Contains(sSA.formats[i], "%v") {
 				sliceToStorage = append(sliceToStorage, fmt.Sprintf(sSA.formats[i], comparative))
@@ -101,6 +101,8 @@ func (sSA *sQLSectionArchitecture) analyseMapStringInterfaceContext() {
 		switch sSA.mode {
 		case "setter", "fullSetter":
 			sSA.analyseSetterMode(columnName, value, comparative, effectiveFormat)
+		case "increment":
+			sSA.analyseIncrementMode(columnName, value, effectiveFormat)
 		case "aggregate":
 			sSA.analyseAggregateMode(columnName, value, comparative, effectiveFormat)
 		case "space":
@@ -111,6 +113,16 @@ func (sSA *sQLSectionArchitecture) analyseMapStringInterfaceContext() {
 
 		sSA.putIntermediate(i)
 		i++
+	}
+}
+
+func (sSA *sQLSectionArchitecture) analyseIncrementMode(columnName string, value interface{}, formats []string) {
+	switch value.(type) {
+	case int:
+		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, columnName, "?")
+		sSA.addStmt(value.(int))
+	default:
+		panic("undefined value type")
 	}
 }
 
@@ -250,6 +262,8 @@ func (sSA *sQLSectionArchitecture) setFormatsFromMode() {
 	switch sSA.mode {
 	case "setter", "fullSetter":
 		sSA.formats = []string{".. %v .", ".. %v (.)"}
+	case "increment":
+		sSA.formats = []string{".. = . + ."}
 	case "space":
 		sSA.formats = []string{"%v%v %v", "%v%v"}
 	case "aggregate":

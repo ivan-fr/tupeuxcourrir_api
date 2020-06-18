@@ -116,6 +116,8 @@ func ForgotPassword(ctx echo.Context) error {
 	var execute = true
 
 	switch {
+	case user.CheckedEmail == false:
+		execute = false
 	case user.SentChangePasswordMailAt.Valid:
 		val, _ := user.SentChangePasswordMailAt.Value()
 		predictionTime := val.(time.Time).Add(15 * time.Minute)
@@ -126,7 +128,7 @@ func ForgotPassword(ctx echo.Context) error {
 
 	if execute {
 		expirationTime := time.Now().Add(15 * time.Minute)
-		claims := jwt.MapClaims{"userId": user.IdUser, "expireAt": expirationTime.Unix()}
+		claims := jwt.MapClaims{"userId": user.IdUser, "exp": expirationTime.Unix()}
 		instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 		token, _ := instantiateClaims.SignedString([]byte("mySecret"))
