@@ -1,18 +1,19 @@
 package main
 
 import (
+	"tupeuxcourrir_api/controllers"
+	"tupeuxcourrir_api/db"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"tupeuxcourrir_api/controllers"
-	"tupeuxcourrir_api/db"
 )
 
-type CustomValidator struct {
+type customValidator struct {
 	validator *validator.Validate
 }
 
-func (cv *CustomValidator) Validate(i interface{}) error {
+func (cv *customValidator) Validate(i interface{}) error {
 	return cv.validator.Struct(i)
 }
 
@@ -21,7 +22,7 @@ func main() {
 
 	e := echo.New()
 
-	e.Validator = &CustomValidator{validator: validator.New()}
+	e.Validator = &customValidator{validator: validator.New()}
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
