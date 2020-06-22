@@ -155,10 +155,55 @@ func ForgotPassword(ctx echo.Context) error {
 		if errSub != nil {
 			return errSub
 		}
-		return ctx.JSON(http.StatusOK, orm.H{})
 
+		return ctx.JSON(http.StatusOK, orm.H{})
 	}
 
 	err = errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
 	return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+}
+
+func EditPasswordFromLink(ctx echo.Context) error {
+	var form forms.EditPasswordForm
+
+	if err := ctx.Bind(&form); err != nil {
+		return err
+	}
+
+	if form.EncryptedPassword != form.ConfirmPassword {
+		return errors.New("the password aren't same")
+	}
+
+	user := ctx.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+
+	userID := claims["userId"]
+
+	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
+		Where(orm.And(orm.H{"userId": userID}))
+
+	mapUser, err := sQB.ApplyQueryRow()
+
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	}
+
+	concernUser := mapUser["User"].(*models.User)
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	}
+
+	form.EncryptedPassword = string(hash)
+
+	orm.BindForm(concernUser, &form)
+
+	uQB := orm.GetUpdateQueryBuilder(concernUser).Where(orm.And(orm.H{"IDUser": concernUser.IdUser}))
+	_, errSub := uQB.ApplyUpdate()
+	if errSub != nil {
+		return errSub
+	}
+
+	return ctx.JSON(http.StatusOK, orm.H{})
 }

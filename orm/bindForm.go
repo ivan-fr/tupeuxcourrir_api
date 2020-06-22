@@ -36,7 +36,7 @@ func BindForm(destModel, form interface{}) {
 	for i := 0; i < valueOfForm.NumField(); i++ {
 		modelFieldConcern := valueOfDest.FieldByName(valueOfForm.Type().Field(i).Name)
 		if !modelFieldConcern.IsValid() {
-			panic("Form is not properly configured")
+			continue
 		}
 
 		switch modelFieldConcern.Kind() {

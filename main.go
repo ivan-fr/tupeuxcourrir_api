@@ -1,8 +1,8 @@
 package main
 
 import (
-	"tupeuxcourrir_api/controllers"
 	"tupeuxcourrir_api/db"
+	"tupeuxcourrir_api/routes"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -29,9 +29,8 @@ func main() {
 	}))
 	e.Use(middleware.Recover())
 
-	e.POST("/signUp", controllers.SignUp)
-	e.POST("/login", controllers.Login)
-	e.POST("/forgotPassword", controllers.ForgotPassword)
+	routes.AuthRoutes(e.Group("/auth"))
+	routes.JWTAuthRoutes(e.Group("/auth/jwt"))
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
