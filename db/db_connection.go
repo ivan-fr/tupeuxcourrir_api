@@ -3,25 +3,26 @@ package db
 import (
 	"database/sql"
 	"fmt"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type Connection struct {
+type connection struct {
 	Db  *sql.DB
 	Err error
 }
 
-var singletonConnector *Connection
+var singletonConnector *connection
 
-func GetConnectionFromDB() *Connection {
+func GetConnectionFromDB() *connection {
 	if singletonConnector == nil {
-		db, err := sql.Open("mysql", "root:Koko32145.3@/tupeuxcourrir_bdd?parseTime=true&loc=Europe%2FParis")
+		db, err := sql.Open("mysql", "root:YpEp5Kh7g.3/tupeuxcourrir_bdd?parseTime=true&loc=Europe%2FParis")
 
 		if err != nil {
 			panic(err)
 		}
 
-		singletonConnector = &Connection{db, err}
+		singletonConnector = &connection{db, err}
 	}
 
 	return singletonConnector

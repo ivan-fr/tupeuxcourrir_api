@@ -4,9 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"time"
@@ -14,6 +11,10 @@ import (
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 	"tupeuxcourrir_api/utils"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func SignUp(ctx echo.Context) error {
@@ -146,18 +147,18 @@ func ForgotPassword(ctx echo.Context) error {
 
 		if err != nil {
 			return err
-		} else {
-			user.SentChangePasswordMailAt = sql.NullTime{Time: time.Now(), Valid: true}
-			uQB := orm.GetUpdateQueryBuilder(user).Where(orm.And(orm.H{"IDUser": user.IdUser}))
-			_, errSub := uQB.ApplyUpdate()
-			if errSub != nil {
-				return errSub
-			} else {
-				return ctx.JSON(http.StatusOK, orm.H{})
-			}
 		}
-	} else {
-		err := errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+
+		user.SentChangePasswordMailAt = sql.NullTime{Time: time.Now(), Valid: true}
+		uQB := orm.GetUpdateQueryBuilder(user).Where(orm.And(orm.H{"IDUser": user.IdUser}))
+		_, errSub := uQB.ApplyUpdate()
+		if errSub != nil {
+			return errSub
+		}
+		return ctx.JSON(http.StatusOK, orm.H{})
+
 	}
+
+	err = errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
+	return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 }
