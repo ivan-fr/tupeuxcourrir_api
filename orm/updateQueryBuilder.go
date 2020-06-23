@@ -20,6 +20,7 @@ type UpdateQueryBuilder struct {
 
 	SectionIncrement     string
 	SectionIncrementStmt []interface{}
+	IncrementFields      []string
 }
 
 func (uQB *UpdateQueryBuilder) valueToInsertFromStringCase(str string) interface{} {
@@ -90,6 +91,19 @@ func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
 
 	for j := 1; j < valueOfRef.NumField(); j++ {
 		if !isRelationshipField(valueOfRef.Field(j)) {
+			skipThisField := false
+
+			for _, incrementField := range uQB.IncrementFields {
+				if incrementField == valueOfRef.Type().Field(j).Name {
+					skipThisField = true
+					break
+				}
+			}
+
+			if skipThisField {
+				continue
+			}
+
 			switch valueOfRef.Field(j).Kind() {
 			case reflect.Struct:
 				mapFilter[valueOfRef.Type().Field(j).Name] = uQB.valueToInsertFromStructCase(
@@ -108,6 +122,12 @@ func (uQB *UpdateQueryBuilder) getSetSectionFromRef() {
 }
 
 func (uQB *UpdateQueryBuilder) Increment(incrementMap H) *UpdateQueryBuilder {
+	uQB.IncrementFields = nil
+
+	for key := range incrementMap {
+		uQB.IncrementFields = append(uQB.IncrementFields, key)
+	}
+
 	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: true, mode: "increment", context: incrementMap}
 	sSA.constructSQlSection()
 
