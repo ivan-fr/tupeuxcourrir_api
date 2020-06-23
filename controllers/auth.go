@@ -17,6 +17,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var jwtEditPasswordSubject = "forgotPassword"
+
 func SignUp(ctx echo.Context) error {
 	var form forms.SignUpForm
 	var user models.User
@@ -133,7 +135,7 @@ func ForgotPassword(ctx echo.Context) error {
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
-				Subject:   "forgotPassword",
+				Subject:   jwtEditPasswordSubject,
 			},
 		}
 
@@ -171,6 +173,10 @@ func ForgotPassword(ctx echo.Context) error {
 func EditPasswordFromLink(ctx echo.Context) error {
 	user := ctx.Get("user").(*jwt.Token)
 	claims := user.Claims.(*utils.JwtCustomClaims)
+
+	if claims.Subject != jwtEditPasswordSubject {
+		return errors.New("wrong jwt subject")
+	}
 
 	var form forms.EditPasswordForm
 
