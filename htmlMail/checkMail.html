@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Validate my mail</title>
+</head>
+<body>
+<p>
+    Hello, {{.fullName}}
+</p>
+<p>
+    For validate your mail, follow this link :
+    <a target="_blank" href="http://{{.host}}/checker/checkMail/{{.token}}">Link</a>
+</p>
+<p>
+    If the link don't work, print this address on your navigator :
+</p>
+<pre>
+    http://{{.host}}/auth/edit_password_from_forgot/{{.token}}
+</pre>
+<p>
+    The tupeuxcourrir.fr Team.
+</p>
+</body>
+</html>

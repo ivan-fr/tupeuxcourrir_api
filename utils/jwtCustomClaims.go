@@ -28,4 +28,5 @@ func (jCC *JwtCustomClaims) GetToken() string {
 var JWTConfig = middleware.JWTConfig{
 	Claims:     &JwtCustomClaims{},
 	SigningKey: []byte(secret),
+	ContextKey: "JWTContext",
 }

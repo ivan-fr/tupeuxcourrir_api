@@ -19,3 +19,9 @@ func JWTAuthRoutes(group *echo.Group) {
 	group.Use(middleware.JWTWithConfig(utils.JWTConfig))
 	group.POST("/editPassword", controllers.EditPasswordFromLink)
 }
+
+func JWTCheckerRoutes(group *echo.Group) {
+	group.Use(middleware.JWTWithConfig(utils.JWTConfig))
+	group.POST("/sendForValidateMail", controllers.SendForValidateMail)
+	group.POST("/checkMail", controllers.CheckMail)
+}

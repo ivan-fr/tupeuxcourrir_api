@@ -17,7 +17,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtEditPasswordSubject = "forgotPassword"
+const jwtEditPasswordSubject = "forgotPassword"
+const jwtLoginSubject = "login"
 
 func SignUp(ctx echo.Context) error {
 	var form forms.SignUpForm
@@ -86,7 +87,7 @@ func Login(ctx echo.Context) error {
 		UserID: user.IdUser,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
-			Subject:   "login",
+			Subject:   jwtLoginSubject,
 		},
 	}
 
@@ -163,7 +164,7 @@ func ForgotPassword(ctx echo.Context) error {
 			return errSub
 		}
 
-		return ctx.JSON(http.StatusOK, orm.H{})
+		return ctx.JSON(http.StatusOK, echo.Map{})
 	}
 
 	err = errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
@@ -171,8 +172,8 @@ func ForgotPassword(ctx echo.Context) error {
 }
 
 func EditPasswordFromLink(ctx echo.Context) error {
-	user := ctx.Get("user").(*jwt.Token)
-	claims := user.Claims.(*utils.JwtCustomClaims)
+	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
+	claims := JWTContext.Claims.(*utils.JwtCustomClaims)
 
 	if claims.Subject != jwtEditPasswordSubject {
 		return errors.New("wrong jwt subject")
@@ -198,7 +199,7 @@ func EditPasswordFromLink(ctx echo.Context) error {
 	mapUser, err := sQB.ApplyQueryRow()
 
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		return err
 	}
 
 	concernUser := mapUser["User"].(*models.User)
