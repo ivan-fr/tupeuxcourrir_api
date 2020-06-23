@@ -80,16 +80,15 @@ func Login(ctx echo.Context) error {
 		expirationTime = time.Now().Add(5 * time.Hour)
 	}
 
-	claims := jwt.MapClaims{"userId": user.IdUser, "exp": expirationTime.Unix()}
-	instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	token, errToken := instantiateClaims.SignedString([]byte("mySecret"))
-
-	if errToken != nil {
-		return ctx.JSON(http.StatusInternalServerError, orm.H{})
+	claims := &utils.JwtCustomClaims{
+		UserID: user.IdUser,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+			Subject:   "login",
+		},
 	}
 
-	return ctx.JSON(http.StatusOK, orm.H{"token": token})
+	return ctx.JSON(http.StatusOK, orm.H{"token": claims.GetToken()})
 }
 
 func ForgotPassword(ctx echo.Context) error {
@@ -129,14 +128,20 @@ func ForgotPassword(ctx echo.Context) error {
 
 	if execute {
 		expirationTime := time.Now().Add(15 * time.Minute)
-		claims := jwt.MapClaims{"userId": user.IdUser, "exp": expirationTime.Unix()}
-		instantiateClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-		token, _ := instantiateClaims.SignedString([]byte("mySecret"))
+		claims := &utils.JwtCustomClaims{
+			UserID: user.IdUser,
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: expirationTime.Unix(),
+				Subject:   "forgotPassword",
+			},
+		}
+
+		token := claims.GetToken()
 
 		mailer := utils.NewMail([]string{user.Email}, "Change your password", "")
 		err = mailer.ParseTemplate("htmlMail/changePassword.html",
-			orm.H{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName.String),
+			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName.String),
 				"host": ctx.Request().Host, "token": token})
 
 		if err != nil {
@@ -164,23 +169,25 @@ func ForgotPassword(ctx echo.Context) error {
 }
 
 func EditPasswordFromLink(ctx echo.Context) error {
+	user := ctx.Get("user").(*jwt.Token)
+	claims := user.Claims.(*utils.JwtCustomClaims)
+
 	var form forms.EditPasswordForm
 
 	if err := ctx.Bind(&form); err != nil {
 		return err
 	}
 
+	if err := ctx.Validate(&form); err != nil {
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	}
+
 	if form.EncryptedPassword != form.ConfirmPassword {
 		return errors.New("the password aren't same")
 	}
 
-	user := ctx.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-
-	userID := claims["userId"]
-
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
-		Where(orm.And(orm.H{"userId": userID}))
+		Where(orm.And(orm.H{"userId": claims.UserID}))
 
 	mapUser, err := sQB.ApplyQueryRow()
 

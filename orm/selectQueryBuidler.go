@@ -198,6 +198,7 @@ func (sQB *SelectQueryBuilder) Where(logical *Logical) *SelectQueryBuilder {
 
 	var str string
 	str, sQB.SectionWhereStmt = logical.GetSentence("setter")
+
 	sQB.SectionWhere = fmt.Sprintf("WHERE %v", str)
 
 	return sQB

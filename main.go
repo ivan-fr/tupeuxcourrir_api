@@ -25,10 +25,8 @@ func main() {
 	e.Validator = &customValidator{validator: validator.New()}
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}\n",
+		Format: "method=${method}, uri=${uri}, status=${status}, error=${error}\n",
 	}))
-
-	e.Use(middleware.Recover())
 
 	routes.AuthRoutes(e.Group("/auth"))
 	routes.JWTAuthRoutes(e.Group("/auth/jwt"))

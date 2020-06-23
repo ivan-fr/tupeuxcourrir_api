@@ -155,17 +155,21 @@ func (sSA *sQLSectionArchitecture) analyseSetterMode(columnName string, value in
 		checkSlice = true
 	}
 
-	if checkSlice && comparative == "IN" {
-		valueOfValue := reflect.ValueOf(value)
-		if valueOfValue.Type().Kind() == reflect.Slice {
-			sSASub := &sQLSectionArchitecture{mode: "space",
-				isStmts:            true,
-				intermediateString: ",",
-				context:            valueOfValue.Interface()}
-			sSASub.constructSQlSection()
+	if checkSlice {
+		if comparative == "IN" {
+			valueOfValue := reflect.ValueOf(value)
+			if valueOfValue.Type().Kind() == reflect.Slice {
+				sSASub := &sQLSectionArchitecture{mode: "space",
+					isStmts:            true,
+					intermediateString: ",",
+					context:            valueOfValue.Interface()}
+				sSASub.constructSQlSection()
 
-			sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, columnName, sSASub.SQLSection)
-			sSA.valuesFromStmts = append(sSA.valuesFromStmts, sSASub.valuesFromStmts...)
+				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, columnName, sSASub.SQLSection)
+				sSA.valuesFromStmts = append(sSA.valuesFromStmts, sSASub.valuesFromStmts...)
+			}
+		} else {
+			panic("undefined value type")
 		}
 	}
 }
@@ -198,17 +202,21 @@ func (sSA *sQLSectionArchitecture) analyseAggregateMode(aggregateFunction string
 				checkSlice = true
 			}
 
-			if comparative == "IN" && checkSlice {
-				valueOfVToCompare := valueOfValue.Index(1).Interface()
-				if reflect.TypeOf(valueOfVToCompare).Kind() == reflect.Slice {
-					sSASub := &sQLSectionArchitecture{mode: "space",
-						isStmts:            true,
-						intermediateString: ",",
-						context:            valueOfVToCompare}
-					sSASub.constructSQlSection()
+			if checkSlice {
+				if comparative == "IN" {
+					valueOfVToCompare := valueOfValue.Index(1).Interface()
+					if reflect.TypeOf(valueOfVToCompare).Kind() == reflect.Slice {
+						sSASub := &sQLSectionArchitecture{mode: "space",
+							isStmts:            true,
+							intermediateString: ",",
+							context:            valueOfVToCompare}
+						sSASub.constructSQlSection()
 
-					sSA.SQLSection = fmt.Sprintf(formats[2], sSA.SQLSection, aggregateFunction, columnName, sSASub.SQLSection)
-					sSA.valuesFromStmts = append(sSA.valuesFromStmts, sSASub.valuesFromStmts...)
+						sSA.SQLSection = fmt.Sprintf(formats[2], sSA.SQLSection, aggregateFunction, columnName, sSASub.SQLSection)
+						sSA.valuesFromStmts = append(sSA.valuesFromStmts, sSASub.valuesFromStmts...)
+					}
+				} else {
+					panic("undefined type")
 				}
 			}
 		}
