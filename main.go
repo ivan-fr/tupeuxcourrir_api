@@ -27,6 +27,7 @@ func main() {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
+
 	e.Use(middleware.Recover())
 
 	routes.AuthRoutes(e.Group("/auth"))
