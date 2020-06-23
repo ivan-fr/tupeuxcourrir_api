@@ -150,7 +150,7 @@ func ForgotPassword(ctx echo.Context) error {
 		}
 
 		user.SentChangePasswordMailAt = sql.NullTime{Time: time.Now(), Valid: true}
-		uQB := orm.GetUpdateQueryBuilder(user).Where(orm.And(orm.H{"IDUser": user.IdUser}))
+		uQB := orm.GetUpdateQueryBuilder(user)
 		_, errSub := uQB.ApplyUpdate()
 		if errSub != nil {
 			return errSub
@@ -199,7 +199,7 @@ func EditPasswordFromLink(ctx echo.Context) error {
 
 	orm.BindForm(concernUser, &form)
 
-	uQB := orm.GetUpdateQueryBuilder(concernUser).Where(orm.And(orm.H{"IDUser": concernUser.IdUser}))
+	uQB := orm.GetUpdateQueryBuilder(concernUser)
 	_, errSub := uQB.ApplyUpdate()
 	if errSub != nil {
 		return errSub

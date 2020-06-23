@@ -118,11 +118,18 @@ func (uQB *UpdateQueryBuilder) Increment(incrementMap H) *UpdateQueryBuilder {
 }
 
 func (uQB *UpdateQueryBuilder) ConstructSql() string {
-	var theSql = fmt.Sprintf("UPDATE %v",
+	var theSQL = fmt.Sprintf("UPDATE %v",
 		getTableName(getModelName(uQB.referenceModel)))
 
 	if uQB.SectionWhere == "" {
-		panic("no where section")
+		pkFieldName := getPKFieldNameFromModel(uQB.referenceModel)
+		pkFieldValue := reflect.ValueOf(uQB.referenceModel).FieldByName(pkFieldName)
+
+		if pkFieldValue.IsZero() {
+			panic("your model haven't already an ID")
+		}
+
+		uQB.Where(And(H{pkFieldName: pkFieldValue}))
 	}
 
 	if uQB.SectionSet == "" {
@@ -132,7 +139,7 @@ func (uQB *UpdateQueryBuilder) ConstructSql() string {
 	addPrefixToSections(uQB, " ", 0)
 
 	_sql := fmt.Sprintf("%v%v%v%v;",
-		theSql,
+		theSQL,
 		uQB.SectionSet,
 		uQB.SectionIncrement,
 		uQB.SectionWhere)
