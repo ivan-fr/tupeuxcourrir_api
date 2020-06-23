@@ -187,7 +187,7 @@ func EditPasswordFromLink(ctx echo.Context) error {
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
-		Where(orm.And(orm.H{"userId": claims.UserID}))
+		Where(orm.And(orm.H{"IdUser": claims.UserID}))
 
 	mapUser, err := sQB.ApplyQueryRow()
 

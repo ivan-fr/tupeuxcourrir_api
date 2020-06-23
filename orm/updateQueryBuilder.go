@@ -123,13 +123,13 @@ func (uQB *UpdateQueryBuilder) ConstructSql() string {
 
 	if uQB.SectionWhere == "" {
 		pkFieldName := getPKFieldNameFromModel(uQB.referenceModel)
-		pkFieldValue := reflect.ValueOf(uQB.referenceModel).FieldByName(pkFieldName)
+		pkFieldValue := reflect.ValueOf(uQB.referenceModel).Elem().FieldByName(pkFieldName)
 
 		if pkFieldValue.IsZero() {
 			panic("your model haven't already an ID")
 		}
 
-		uQB.Where(And(H{pkFieldName: pkFieldValue}))
+		uQB.Where(And(H{pkFieldName: pkFieldValue.Interface()}))
 	}
 
 	if uQB.SectionSet == "" {
