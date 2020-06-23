@@ -16,13 +16,13 @@ func (jCC *JwtCustomClaims) GetToken() string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jCC)
 
 	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte(secret))
+	stringToken, err := token.SignedString([]byte(secret))
 
 	if err != nil {
 		panic(err)
 	}
 
-	return t
+	return stringToken
 }
 
 var JWTConfig = middleware.JWTConfig{

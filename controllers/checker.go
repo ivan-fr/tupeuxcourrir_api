@@ -109,6 +109,10 @@ func CheckMail(ctx echo.Context) error {
 
 	concernUser := mapUser["User"].(*models.User)
 
+	if concernUser.CheckedEmail {
+		return ctx.JSON(http.StatusUnauthorized, echo.Map{})
+	}
+
 	concernUser.CheckedEmail = true
 
 	uQB := orm.GetUpdateQueryBuilder(concernUser)
@@ -117,5 +121,5 @@ func CheckMail(ctx echo.Context) error {
 		return errSub
 	}
 
-	return ctx.JSON(http.StatusOK, orm.H{})
+	return ctx.JSON(http.StatusOK, echo.Map{})
 }
