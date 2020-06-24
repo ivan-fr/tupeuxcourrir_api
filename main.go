@@ -29,7 +29,6 @@ func main() {
 	}))
 
 	routes.AuthRoutes(e.Group("/auth"))
-	routes.JWTAuthRoutes(e.Group("/auth/jwt"))
 	routes.JWTCheckerRoutes(e.Group("/checker"))
 
 	e.Logger.Fatal(e.Start(":8080"))

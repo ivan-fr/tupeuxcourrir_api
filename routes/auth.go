@@ -14,21 +14,12 @@ func AuthRoutes(group *echo.Group) {
 	group.POST("/login", controllers.Login)
 	group.POST("/forgotPassword", controllers.ForgotPassword)
 	group.POST("/editPassword", controllers.EditPasswordFromLink)
-}
 
-func JWTAuthRoutes(group *echo.Group) {
+	subgroup := group.Group("/jwt")
+
 	JWTconfig := TPCMiddleware.JWTConfig
 	JWTconfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtEditPasswordSubject)
+	subgroup.Use(middleware.JWTWithConfig(JWTconfig))
 
-	group.Use(middleware.JWTWithConfig(JWTconfig))
-	group.POST("/editPassword", controllers.EditPasswordFromLink)
-}
-
-func JWTCheckerRoutes(group *echo.Group) {
-	JWTconfig := TPCMiddleware.JWTConfig
-	JWTconfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtLoginSubject)
-
-	group.Use(middleware.JWTWithConfig(JWTconfig))
-	group.POST("/sendForValidateMail", controllers.SendForValidateMail)
-	group.POST("/checkMail", controllers.CheckMail)
+	subgroup.POST("/editPassword", controllers.EditPasswordFromLink)
 }
