@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log"
 	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
@@ -52,7 +51,6 @@ func ImplementUserFromJWTWithConfig(configIJWTU *ImplementJWTUser) middleware.JW
 		claims := JWTContext.Claims.(*JwtCustomClaims)
 		var mapUser orm.H
 
-		log.Println(claims.Subject, configIJWTU.subject)
 		if claims.Subject == configIJWTU.subject {
 			sQB := orm.GetSelectQueryBuilder(models.NewUser())
 
