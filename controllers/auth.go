@@ -9,6 +9,7 @@ import (
 	"time"
 	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/forms"
+	TCPMiddleware "tupeuxcourrir_api/middleware"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 	"tupeuxcourrir_api/utils"
@@ -81,7 +82,7 @@ func Login(ctx echo.Context) error {
 		expirationTime = time.Now().Add(5 * time.Hour)
 	}
 
-	claims := &utils.JwtCustomClaims{
+	claims := &TCPMiddleware.JwtCustomClaims{
 		UserID: user.IdUser,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
@@ -130,7 +131,7 @@ func ForgotPassword(ctx echo.Context) error {
 	if execute {
 		expirationTime := time.Now().Add(15 * time.Minute)
 
-		claims := &utils.JwtCustomClaims{
+		claims := &TCPMiddleware.JwtCustomClaims{
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
@@ -170,10 +171,9 @@ func ForgotPassword(ctx echo.Context) error {
 }
 
 func EditPasswordFromLink(ctx echo.Context) error {
-	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
-	claims := JWTContext.Claims.(*utils.JwtCustomClaims)
+	mapUser := ctx.Get("user").(orm.H)
 
-	if claims.Subject != config.JwtEditPasswordSubject {
+	if mapUser == nil {
 		return errors.New("wrong jwt subject")
 	}
 
@@ -189,15 +189,6 @@ func EditPasswordFromLink(ctx echo.Context) error {
 
 	if form.EncryptedPassword != form.ConfirmPassword {
 		return errors.New("the password aren't same")
-	}
-
-	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
-		Where(orm.And(orm.H{"IdUser": claims.UserID}))
-
-	mapUser, err := sQB.ApplyQueryRow()
-
-	if err != nil {
-		return err
 	}
 
 	concernUser := mapUser["User"].(*models.User)

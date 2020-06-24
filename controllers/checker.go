@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 	"tupeuxcourrir_api/config"
+	TCPMiddleware "tupeuxcourrir_api/middleware"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 	"tupeuxcourrir_api/utils"
@@ -17,20 +17,11 @@ import (
 )
 
 func SendForValidateMail(ctx echo.Context) error {
-	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
-	claims := JWTContext.Claims.(*utils.JwtCustomClaims)
+	mapUser := ctx.Get("user").(orm.H)
+	var err error
 
-	if claims.Subject != config.JwtLoginSubject {
+	if mapUser == nil {
 		return errors.New("wrong jwt subject")
-	}
-
-	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
-		Where(orm.And(orm.H{"IdUser": claims.UserID}))
-
-	mapUser, err := sQB.ApplyQueryRow()
-
-	if err != nil {
-		return err
 	}
 
 	user := mapUser["User"].(*models.User)
@@ -51,7 +42,7 @@ func SendForValidateMail(ctx echo.Context) error {
 	if execute {
 		expirationTime := time.Now().Add(15 * time.Minute)
 
-		newClaims := &utils.JwtCustomClaims{
+		newClaims := &TCPMiddleware.JwtCustomClaims{
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
@@ -67,7 +58,7 @@ func SendForValidateMail(ctx echo.Context) error {
 				"host": ctx.Request().Host, "token": token})
 
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		err = mailer.SendEmail()
@@ -92,7 +83,7 @@ func SendForValidateMail(ctx echo.Context) error {
 
 func CheckMail(ctx echo.Context) error {
 	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
-	claims := JWTContext.Claims.(*utils.JwtCustomClaims)
+	claims := JWTContext.Claims.(*TCPMiddleware.JwtCustomClaims)
 
 	if claims.Subject != config.JwtCheckEmailSubject {
 		return errors.New("wrong jwt subject")

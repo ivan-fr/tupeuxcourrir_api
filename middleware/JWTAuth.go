@@ -4,7 +4,6 @@ import (
 	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
-	"tupeuxcourrir_api/utils"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
@@ -15,14 +14,44 @@ type ImplementJWTUser struct {
 	addInitiatedThread bool
 	addRoles           bool
 	addReceivedThread  bool
+	subject            string
+}
+
+type JwtCustomClaims struct {
+	UserID int `json:"id"`
+	jwt.StandardClaims
+}
+
+func (jCC *JwtCustomClaims) GetToken() string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jCC)
+
+	// Generate encoded token and send it as response.
+	stringToken, err := token.SignedString([]byte(config.JWTSecret))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return stringToken
+}
+
+var JWTConfig = middleware.JWTConfig{
+	Claims:     &JwtCustomClaims{},
+	SigningKey: []byte(config.JWTSecret),
+	ContextKey: "JWTContext",
+}
+
+func ImplementUserFromJwt(subject string) middleware.JWTSuccessHandler {
+	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{subject: subject})
 }
 
 func ImplementUserFromJWTWithConfig(configIJWTU *ImplementJWTUser) middleware.JWTSuccessHandler {
 	return func(ctx echo.Context) {
 		JWTContext := ctx.Get("JWTContext").(*jwt.Token)
-		claims := JWTContext.Claims.(*utils.JwtCustomClaims)
+		claims := JWTContext.Claims.(*JwtCustomClaims)
+		var mapUser orm.H
 
-		if claims.Subject == config.JwtLoginSubject {
+		if claims.Subject == configIJWTU.subject {
 			sQB := orm.GetSelectQueryBuilder(models.NewUser())
 
 			if configIJWTU.addInitiatedThread {
@@ -39,13 +68,14 @@ func ImplementUserFromJWTWithConfig(configIJWTU *ImplementJWTUser) middleware.JW
 
 			sQB = sQB.Where(orm.And(orm.H{"IdUser": claims.UserID}))
 
-			mapUser, err := sQB.ApplyQueryRow()
+			var err error
+			mapUser, err = sQB.ApplyQueryRow()
 
 			if err != nil {
 				panic(err)
 			}
-
-			ctx.Set("user", mapUser)
 		}
+
+		ctx.Set("user", mapUser)
 	}
 }
