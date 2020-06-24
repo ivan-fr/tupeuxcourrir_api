@@ -4,23 +4,23 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
 	"log"
 	"net/http"
 	"time"
+	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 	"tupeuxcourrir_api/utils"
-)
 
-const jwtCheckEmailSubject = "confirmEmail"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo/v4"
+)
 
 func SendForValidateMail(ctx echo.Context) error {
 	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
 	claims := JWTContext.Claims.(*utils.JwtCustomClaims)
 
-	if claims.Subject != jwtLoginSubject {
+	if claims.Subject != config.JwtLoginSubject {
 		return errors.New("wrong jwt subject")
 	}
 
@@ -55,7 +55,7 @@ func SendForValidateMail(ctx echo.Context) error {
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
-				Subject:   jwtCheckEmailSubject,
+				Subject:   config.JwtCheckEmailSubject,
 			},
 		}
 
@@ -94,7 +94,7 @@ func CheckMail(ctx echo.Context) error {
 	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
 	claims := JWTContext.Claims.(*utils.JwtCustomClaims)
 
-	if claims.Subject != jwtCheckEmailSubject {
+	if claims.Subject != config.JwtCheckEmailSubject {
 		return errors.New("wrong jwt subject")
 	}
 

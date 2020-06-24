@@ -21,8 +21,8 @@ type User struct {
 	SentChangePasswordMailAt sql.NullTime
 	CreatedAt                sql.NullTime
 	Roles                    *orm.ManyToManyRelationShip
-	InitiatedThread          *orm.OneToManyRelationShip
-	ReceivedThread           *orm.OneToManyRelationShip
+	InitiatedThreads         *orm.OneToManyRelationShip
+	ReceivedThreads          *orm.OneToManyRelationShip
 }
 
 func NewUser() *User {
@@ -31,8 +31,8 @@ func NewUser() *User {
 	user := User{}
 
 	user.Roles = &orm.ManyToManyRelationShip{Target: &Role{}, IntermediateTarget: usersRoles}
-	user.InitiatedThread = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "InitiatorThread"}
-	user.ReceivedThread = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "ReceiverThread"}
+	user.InitiatedThreads = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "InitiatorThread"}
+	user.ReceivedThreads = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "ReceiverThread"}
 
 	return &user
 }

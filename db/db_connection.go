@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -30,9 +30,9 @@ func GetConnectionFromDB() *connection {
 
 func DeferClose() {
 	if singletonConnector != nil {
-		connection := GetConnectionFromDB()
+		connection := singletonConnector
 		if err := connection.Db.Close(); err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 }

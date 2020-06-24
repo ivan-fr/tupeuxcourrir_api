@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/forms"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
@@ -16,9 +17,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
-
-const jwtEditPasswordSubject = "forgotPassword"
-const jwtLoginSubject = "login"
 
 func SignUp(ctx echo.Context) error {
 	var form forms.SignUpForm
@@ -87,7 +85,7 @@ func Login(ctx echo.Context) error {
 		UserID: user.IdUser,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
-			Subject:   jwtLoginSubject,
+			Subject:   config.JwtLoginSubject,
 		},
 	}
 
@@ -136,7 +134,7 @@ func ForgotPassword(ctx echo.Context) error {
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
-				Subject:   jwtEditPasswordSubject,
+				Subject:   config.JwtEditPasswordSubject,
 			},
 		}
 
@@ -175,7 +173,7 @@ func EditPasswordFromLink(ctx echo.Context) error {
 	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
 	claims := JWTContext.Claims.(*utils.JwtCustomClaims)
 
-	if claims.Subject != jwtEditPasswordSubject {
+	if claims.Subject != config.JwtEditPasswordSubject {
 		return errors.New("wrong jwt subject")
 	}
 
