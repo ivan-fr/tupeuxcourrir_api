@@ -45,24 +45,24 @@ func ImplementUserFromJwt(subject string) middleware.JWTSuccessHandler {
 	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{subject: subject})
 }
 
-func ImplementUserFromJWTWithConfig(configIJWTU *ImplementJWTUser) middleware.JWTSuccessHandler {
+func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccessHandler {
 	return func(ctx echo.Context) {
 		JWTContext := ctx.Get("JWTContext").(*jwt.Token)
 		claims := JWTContext.Claims.(*JwtCustomClaims)
 		var mapUser orm.H
 
-		if claims.Subject == configIJWTU.subject {
+		if claims.Subject == iJU.subject {
 			sQB := orm.GetSelectQueryBuilder(models.NewUser())
 
-			if configIJWTU.addInitiatedThread {
+			if iJU.addInitiatedThread {
 				sQB = sQB.Consider("InitiatedThreads")
 			}
 
-			if configIJWTU.addReceivedThread {
+			if iJU.addReceivedThread {
 				sQB = sQB.Consider("ReceiverThreads")
 			}
 
-			if configIJWTU.addRoles {
+			if iJU.addRoles {
 				sQB = sQB.Consider("Roles")
 			}
 
