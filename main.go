@@ -30,6 +30,7 @@ func main() {
 
 	routes.AuthRoutes(e.Group("/auth"))
 	routes.JWTCheckerRoutes(e.Group("/checker"))
+	routes.JWTProfileRoutes(e.Group("/profile"))
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

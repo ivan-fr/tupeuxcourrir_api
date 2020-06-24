@@ -9,10 +9,10 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func JWTCheckerRoutes(group *echo.Group) {
+func JWTProfileRoutes(group *echo.Group) {
 	JWTconfig := TPCMiddleware.JWTConfig
-	JWTconfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtCheckEmailSubject)
+	JWTconfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtLoginSubject)
 
 	group.Use(middleware.JWTWithConfig(JWTconfig))
-	group.POST("/checkMail", controllers.CheckMail)
+	group.POST("/sendForValidateMail", controllers.SendForValidateMail)
 }
