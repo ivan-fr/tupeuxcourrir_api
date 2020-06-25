@@ -31,7 +31,7 @@ func main() {
 		Format: "method=${method}, uri=${uri}, status=${status}, error=${error}\n",
 	}))
 
-	e.Static("/", "public")
+	e.Static("/static", "public")
 	routes.AuthRoutes(e.Group("/auth"))
 	routes.JWTCheckerRoutes(e.Group("/checker"))
 	routes.JWTProfileRoutes(e.Group("/profile"))

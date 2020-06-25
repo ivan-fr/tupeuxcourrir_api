@@ -49,15 +49,15 @@ func PutPhoto(ctx echo.Context) error {
 		return errors.New("wrong jwt subject")
 	}
 
-	user.PhotoPath.String = random.String(5)
-	user.PhotoPath.Valid = true
-
 	splitDot := strings.Split(photoFile.Filename, ".")
-	photoFile.Filename = user.PhotoPath.String + splitDot[len(splitDot)-1]
+	photoFile.Filename = random.String(8) + "." + splitDot[len(splitDot)-1]
+
+	user.PhotoPath.String = photoFile.Filename
+	user.PhotoPath.Valid = true
 
 	// Destination
 	var dst *os.File
-	dst, err = os.Create(photoFile.Filename)
+	dst, err = os.Create("public/upload/" + photoFile.Filename)
 
 	if err != nil {
 		return err
