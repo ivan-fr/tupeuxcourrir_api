@@ -4,7 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/labstack/gommon/random"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 	"tupeuxcourrir_api/config"
 	TCPMiddleware "tupeuxcourrir_api/middleware"
@@ -16,8 +20,60 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func PutPhoto(ctx echo.Context) {
+func PutPhoto(ctx echo.Context) error {
+	photoFile, err := ctx.FormFile("photoFile")
 
+	if err != nil {
+		return err
+	}
+
+	contentType := photoFile.Header.Get("Content-Type")
+
+	if contentType != "image/jpeg" && contentType != "image/png" {
+		err = errors.New("only accept jpeg & png, current : " + contentType)
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	}
+
+	var src multipart.File
+	src, err = photoFile.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	mapUser := ctx.Get("user").(orm.H)
+	user := mapUser["User"].(*models.User)
+
+	if mapUser == nil {
+		return errors.New("wrong jwt subject")
+	}
+
+	user.PhotoPath.String = random.String(5) + string(user.IdUser)
+	user.PhotoPath.Valid = true
+
+	photoFile.Filename = user.PhotoPath.String
+
+	// Destination
+	var dst *os.File
+	dst, err = os.Create(photoFile.Filename)
+
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	// Copy
+	if _, err = io.Copy(dst, src); err != nil {
+		return err
+	}
+
+	uQB := orm.GetUpdateQueryBuilder(user)
+	_, errSub := uQB.ApplyUpdate()
+	if errSub != nil {
+		return errSub
+	}
+
+	return ctx.JSON(http.StatusOK, echo.Map{})
 }
 
 func SendForValidateMail(ctx echo.Context) error {

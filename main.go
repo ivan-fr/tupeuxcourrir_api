@@ -23,6 +23,7 @@ func main() {
 	defer db.Close()
 
 	e := echo.New()
+	e.Use(middleware.BodyLimit("3M"))
 
 	e.Validator = &customValidator{validator: validator.New()}
 
@@ -30,6 +31,7 @@ func main() {
 		Format: "method=${method}, uri=${uri}, status=${status}, error=${error}\n",
 	}))
 
+	e.Static("/", "public")
 	routes.AuthRoutes(e.Group("/auth"))
 	routes.JWTCheckerRoutes(e.Group("/checker"))
 	routes.JWTProfileRoutes(e.Group("/profile"))
