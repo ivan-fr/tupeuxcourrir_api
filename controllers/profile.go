@@ -57,7 +57,7 @@ func PutPhoto(ctx echo.Context) error {
 
 	// Destination
 	var dst *os.File
-	dst, err = os.Create("public/upload/" + photoFile.Filename)
+	dst, err = os.Create("public/uploads/" + photoFile.Filename)
 
 	if err != nil {
 		return err

@@ -20,9 +20,9 @@
     "name": "tupeuxcourrir_api/controllers.PutPhoto"
   },
   {
-    "method": "POST",
-    "path": "/auth/signUp",
-    "name": "tupeuxcourrir_api/controllers.SignUp"
+    "method": "GET",
+    "path": "/static/*",
+    "name": "github.com/labstack/echo/v4.common.static.func1"
   },
   {
     "method": "POST",
@@ -35,9 +35,9 @@
     "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
   },
   {
-    "method": "GET",
-    "path": "/static/*",
-    "name": "github.com/labstack/echo/v4.common.static.func1"
+    "method": "POST",
+    "path": "/auth/signUp",
+    "name": "tupeuxcourrir_api/controllers.SignUp"
   },
   {
     "method": "POST",
