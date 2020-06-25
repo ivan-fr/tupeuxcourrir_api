@@ -16,10 +16,8 @@ func AuthRoutes(group *echo.Group) {
 	group.POST("/editPassword", controllers.EditPasswordFromLink)
 
 	subgroup := group.Group("/jwt")
-
 	JWTconfig := TPCMiddleware.JWTConfig
 	JWTconfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtEditPasswordSubject)
-	subgroup.Use(middleware.JWTWithConfig(JWTconfig))
 
-	subgroup.POST("/editPassword", controllers.EditPasswordFromLink)
+	subgroup.POST("/editPassword", controllers.EditPasswordFromLink, middleware.JWTWithConfig(JWTconfig))
 }

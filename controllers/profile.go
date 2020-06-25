@@ -16,6 +16,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func PutPhoto(ctx echo.Context) {
+
+}
+
 func SendForValidateMail(ctx echo.Context) error {
 	mapUser := ctx.Get("user").(orm.H)
 	var err error

@@ -1,0 +1,37 @@
+[
+  {
+    "method": "POST",
+    "path": "/auth/jwt/editPassword",
+    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
+  },
+  {
+    "method": "POST",
+    "path": "/checker/checkMail",
+    "name": "tupeuxcourrir_api/controllers.CheckMail"
+  },
+  {
+    "method": "POST",
+    "path": "/profile/sendForValidateMail",
+    "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/signUp",
+    "name": "tupeuxcourrir_api/controllers.SignUp"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/login",
+    "name": "tupeuxcourrir_api/controllers.Login"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/forgotPassword",
+    "name": "tupeuxcourrir_api/controllers.ForgotPassword"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/editPassword",
+    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
+  }
+]

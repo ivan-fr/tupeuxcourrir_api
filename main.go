@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"tupeuxcourrir_api/db"
 	"tupeuxcourrir_api/routes"
 
@@ -18,7 +20,7 @@ func (cv *customValidator) Validate(i interface{}) error {
 }
 
 func main() {
-	defer db.DeferClose()
+	defer db.Close()
 
 	e := echo.New()
 
@@ -31,6 +33,9 @@ func main() {
 	routes.AuthRoutes(e.Group("/auth"))
 	routes.JWTCheckerRoutes(e.Group("/checker"))
 	routes.JWTProfileRoutes(e.Group("/profile"))
+
+	data, _ := json.MarshalIndent(e.Routes(), "", "  ")
+	ioutil.WriteFile("routes.json", data, 0644)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

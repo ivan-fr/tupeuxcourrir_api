@@ -28,7 +28,7 @@ func GetConnectionFromDB() *connection {
 	return singletonConnector
 }
 
-func DeferClose() {
+func Close() {
 	if singletonConnector != nil {
 		connection := singletonConnector
 		if err := connection.Db.Close(); err != nil {
