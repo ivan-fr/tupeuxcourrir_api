@@ -49,6 +49,14 @@ func PutPhoto(ctx echo.Context) error {
 		return errors.New("wrong jwt subject")
 	}
 
+	if user.PhotoPath.Valid {
+		err = os.Remove("public/uploads/" + user.PhotoPath.String)
+
+		if err != nil {
+			return err
+		}
+	}
+
 	splitDot := strings.Split(photoFile.Filename, ".")
 	photoFile.Filename = random.String(8) + "." + splitDot[len(splitDot)-1]
 

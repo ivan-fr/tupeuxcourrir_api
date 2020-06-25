@@ -1,8 +1,28 @@
 [
   {
     "method": "POST",
+    "path": "/auth/jwt/editPassword",
+    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/signUp",
+    "name": "tupeuxcourrir_api/controllers.SignUp"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/login",
+    "name": "tupeuxcourrir_api/controllers.Login"
+  },
+  {
+    "method": "POST",
     "path": "/auth/forgotPassword",
     "name": "tupeuxcourrir_api/controllers.ForgotPassword"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/editPassword",
+    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
   },
   {
     "method": "POST",
@@ -23,25 +43,5 @@
     "method": "GET",
     "path": "/static/*",
     "name": "github.com/labstack/echo/v4.common.static.func1"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/login",
-    "name": "tupeuxcourrir_api/controllers.Login"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/jwt/editPassword",
-    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/signUp",
-    "name": "tupeuxcourrir_api/controllers.SignUp"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/editPassword",
-    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
   }
 ]
