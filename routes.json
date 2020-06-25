@@ -1,18 +1,18 @@
 [
   {
+    "method": "GET",
+    "path": "/*",
+    "name": "github.com/labstack/echo/v4.common.static.func1"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/signUp",
+    "name": "tupeuxcourrir_api/controllers.SignUp"
+  },
+  {
     "method": "POST",
     "path": "/auth/login",
     "name": "tupeuxcourrir_api/controllers.Login"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/forgotPassword",
-    "name": "tupeuxcourrir_api/controllers.ForgotPassword"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/editPassword",
-    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
   },
   {
     "method": "POST",
@@ -26,6 +26,16 @@
   },
   {
     "method": "POST",
+    "path": "/auth/forgotPassword",
+    "name": "tupeuxcourrir_api/controllers.ForgotPassword"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/editPassword",
+    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
+  },
+  {
+    "method": "POST",
     "path": "/profile/sendForValidateMail",
     "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
   },
@@ -33,10 +43,5 @@
     "method": "POST",
     "path": "/profile/putPhoto",
     "name": "tupeuxcourrir_api/controllers.PutPhoto"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/signUp",
-    "name": "tupeuxcourrir_api/controllers.SignUp"
   }
 ]

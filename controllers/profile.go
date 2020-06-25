@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 	"tupeuxcourrir_api/config"
 	TCPMiddleware "tupeuxcourrir_api/middleware"
@@ -48,10 +49,11 @@ func PutPhoto(ctx echo.Context) error {
 		return errors.New("wrong jwt subject")
 	}
 
-	user.PhotoPath.String = random.String(5) + string(user.IdUser)
+	user.PhotoPath.String = random.String(5)
 	user.PhotoPath.Valid = true
 
-	photoFile.Filename = user.PhotoPath.String
+	splitDot := strings.Split(photoFile.Filename, ".")
+	photoFile.Filename = user.PhotoPath.String + splitDot[len(splitDot)-1]
 
 	// Destination
 	var dst *os.File
