@@ -34,8 +34,8 @@ func main() {
 	routes.JWTCheckerRoutes(e.Group("/checker"))
 	routes.JWTProfileRoutes(e.Group("/profile"))
 
-	data, _ := json.MarshalIndent(e.Routes(), "", "  ")
-	ioutil.WriteFile("routes.json", data, 0644)
+	registeredRoutes, _ := json.MarshalIndent(e.Routes(), "", "  ")
+	_ = ioutil.WriteFile("routes.json", registeredRoutes, 0644)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
