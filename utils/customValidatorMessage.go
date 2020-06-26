@@ -37,8 +37,8 @@ func JsonErrorPattern(err error) map[string]interface{} {
 	}
 
 	if sliceStr == nil {
-		return map[string]interface{}{"error": err.Error()}
+		return map[string]interface{}{"message": err.Error()}
 	}
 
-	return map[string]interface{}{"error": sliceStr}
+	return map[string]interface{}{"message": sliceStr}
 }

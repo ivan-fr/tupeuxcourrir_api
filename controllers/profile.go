@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 	"tupeuxcourrir_api/config"
+	"tupeuxcourrir_api/forms"
 	TCPMiddleware "tupeuxcourrir_api/middleware"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
@@ -20,6 +21,35 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 )
+
+func PutAddress(ctx echo.Context) error {
+	var form forms.PutAddressForm
+
+	mapUser := ctx.Get("user").(orm.H)
+
+	if mapUser == nil {
+		return errors.New("wrong jwt subject")
+	}
+
+	user := mapUser["User"].(*models.User)
+
+	if err := ctx.Bind(&form); err != nil {
+		return err
+	}
+
+	if err := ctx.Validate(&form); err != nil {
+		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	}
+
+	orm.BindForm(user, &form)
+	uQB := orm.GetUpdateQueryBuilder(user)
+
+	if _, err := uQB.ApplyUpdate(); err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, orm.H{})
+}
 
 func PutPhoto(ctx echo.Context) error {
 	photoFile, err := ctx.FormFile("photoFile")
@@ -124,7 +154,7 @@ func SendForValidateMail(ctx echo.Context) error {
 
 		mailer := utils.NewMail([]string{user.Email}, "Validate your email", "")
 		err = mailer.ParseTemplate("htmlMail/checkMail.html",
-			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName.String),
+			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
 				"host": ctx.Request().Host, "token": token})
 
 		if err != nil {

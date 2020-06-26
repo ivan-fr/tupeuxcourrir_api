@@ -9,7 +9,7 @@ type User struct {
 	IdUser                   int `orm:"PK"`
 	Email                    string
 	EncryptedPassword        string
-	FirstName                sql.NullString
+	FirstName                string
 	LastName                 string
 	Pseudo                   string
 	PhotoPath                sql.NullString

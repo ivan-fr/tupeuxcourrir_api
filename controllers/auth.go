@@ -143,7 +143,7 @@ func ForgotPassword(ctx echo.Context) error {
 
 		mailer := utils.NewMail([]string{user.Email}, "Change your password", "")
 		err = mailer.ParseTemplate("htmlMail/changePassword.html",
-			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName.String),
+			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
 				"host": ctx.Request().Host, "token": token})
 
 		if err != nil {
