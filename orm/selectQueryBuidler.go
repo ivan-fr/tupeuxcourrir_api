@@ -314,7 +314,7 @@ func (sQB *SelectQueryBuilder) ApplyPartialQueryRow() (H, error) {
 
 	var addrColumnsResult []interface{}
 	for i := 0; i < len(columnsResult); i++ {
-		addrColumnsResult = append(addrColumnsResult, columnsResult[i])
+		addrColumnsResult = append(addrColumnsResult, &columnsResult[i])
 	}
 
 	err := row.Scan(addrColumnsResult...)
@@ -333,6 +333,48 @@ func (sQB *SelectQueryBuilder) ApplyPartialQueryRow() (H, error) {
 	}
 
 	return mapColumnsResult, err
+}
+
+func (sQB *SelectQueryBuilder) ApplyPartialQuery() ([]H, error) {
+	if sQB.SectionSelect == "" && sQB.SectionAggregate == "" {
+		panic("configuration not supported")
+	}
+
+	connection := db.GetConnectionFromDB()
+	var columnsMatrix []H
+	defer sQB.Clean()
+
+	rows, err := connection.Db.Query(sQB.constructSql(), sQB.getStmts()...)
+
+	if err == nil {
+		for rows.Next() {
+			var columnsResult = make([]interface{}, len(sQB.columns)+len(sQB.aggregates))
+
+			var addrColumnsResult []interface{}
+			for i := 0; i < len(columnsResult); i++ {
+				addrColumnsResult = append(addrColumnsResult, &columnsResult[i])
+			}
+
+			err = rows.Scan(addrColumnsResult...)
+
+			var mapColumnsResult = make(H)
+
+			i := 0
+			for _, value := range sQB.columns {
+				mapColumnsResult[value] = columnsResult[i]
+				i++
+			}
+
+			for key, value := range sQB.aggregates {
+				mapColumnsResult[fmt.Sprintf("%v(%v)", key, value)] = columnsResult[i]
+				i++
+			}
+
+			columnsMatrix = append(columnsMatrix, mapColumnsResult)
+		}
+	}
+
+	return columnsMatrix, err
 }
 
 func (sQB *SelectQueryBuilder) ApplyQuery() ([]H, error) {

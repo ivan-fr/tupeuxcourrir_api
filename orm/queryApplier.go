@@ -13,10 +13,10 @@ func (queryApplier *QueryApplier) hydrate(scan func(dest ...interface{}) error) 
 	var theMap = H{
 		getModelName(queryApplier.model): newModel(queryApplier.model),
 	}
+	addrFields, err := getAddrFieldsToScan(theMap[getModelName(queryApplier.model)])
 
 	var address []interface{}
 	var subErr error
-	addrFields, err := getAddrFieldsToScan(theMap[getModelName(queryApplier.model)])
 
 	if err == nil {
 		i := 0
