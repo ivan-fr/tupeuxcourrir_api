@@ -17,7 +17,11 @@ func JWTProfileRoutes(group *echo.Group) {
 	group.PUT("/putPhoto", controllers.PutPhoto, middleware.JWTWithConfig(JwtConfig))
 	group.PUT("/putAddress", controllers.PutAddress, middleware.JWTWithConfig(JwtConfig))
 
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementPartialUserFromJwt(config.JwtLoginSubject)
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJWTWithConfig(
+		&TPCMiddleware.ImplementJWTUser{AddInitiatedThread: true,
+			AddReceivedThread: true,
+			Subject:           config.JwtLoginSubject,
+			GiveMeSQB:         true})
 
 	group.GET("/threads", controllers.GetThreads, middleware.JWTWithConfig(JwtConfig))
 }

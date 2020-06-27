@@ -11,11 +11,11 @@ import (
 )
 
 type ImplementJWTUser struct {
-	addInitiatedThread bool
-	addRoles           bool
-	addReceivedThread  bool
+	AddInitiatedThread bool
+	AddRoles           bool
+	AddReceivedThread  bool
 	GiveMeSQB          bool
-	subject            string
+	Subject            string
 }
 
 type JwtCustomClaims struct {
@@ -43,11 +43,7 @@ var JWTConfig = middleware.JWTConfig{
 }
 
 func ImplementUserFromJwt(subject string) middleware.JWTSuccessHandler {
-	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{subject: subject})
-}
-
-func ImplementPartialUserFromJwt(subject string) middleware.JWTSuccessHandler {
-	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{subject: subject, GiveMeSQB: true})
+	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{Subject: subject})
 }
 
 func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccessHandler {
@@ -56,18 +52,18 @@ func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccess
 		claims := JWTContext.Claims.(*JwtCustomClaims)
 		var mapUser orm.H
 
-		if claims.Subject == iJU.subject {
+		if claims.Subject == iJU.Subject {
 			sQB := orm.GetSelectQueryBuilder(models.NewUser())
 
-			if iJU.addInitiatedThread {
+			if iJU.AddInitiatedThread {
 				sQB = sQB.Consider("InitiatedThreads")
 			}
 
-			if iJU.addReceivedThread {
+			if iJU.AddReceivedThread {
 				sQB = sQB.Consider("ReceiverThreads")
 			}
 
-			if iJU.addRoles {
+			if iJU.AddRoles {
 				sQB = sQB.Consider("Roles")
 			}
 
