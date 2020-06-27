@@ -4,9 +4,15 @@
 
 package websockets
 
+import "tupeuxcourrir_api/models"
+
+var mapThreadHub = make(map[int]*ThreadHub)
+
 // ThreadHub maintains the set of active clients and broadcasts messages to the
 // clients.
 type ThreadHub struct {
+	threadID int
+
 	// Registered clients.
 	clients map[*Client]bool
 
@@ -20,34 +26,58 @@ type ThreadHub struct {
 	unregister chan *Client
 }
 
-func newHub() *ThreadHub {
-	return &ThreadHub{
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
+func GetThreadHub(thread *models.Thread) *ThreadHub {
+	threadHub, ok := mapThreadHub[thread.IdThread]
+
+	if !ok {
+		mapThreadHub[thread.IdThread] = &ThreadHub{
+			threadID:   thread.IdThread,
+			broadcast:  make(chan []byte),
+			register:   make(chan *Client),
+			unregister: make(chan *Client),
+			clients:    make(map[*Client]bool),
+		}
+
+		defer func() {
+			go mapThreadHub[thread.IdThread].run()
+		}()
+
+		return mapThreadHub[thread.IdThread]
 	}
+
+	return threadHub
 }
 
-func (h *ThreadHub) run() {
+func (tH *ThreadHub) run() {
+	stopLoop := false
+
 	for {
 		select {
-		case client := <-h.register:
-			h.clients[client] = true
-		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
+		case client := <-tH.register:
+			tH.clients[client] = true
+		case client := <-tH.unregister:
+			if _, ok := tH.clients[client]; ok {
+				delete(tH.clients, client)
 				close(client.send)
+				if len(tH.clients) == 0 {
+					stopLoop = true
+				}
 			}
-		case message := <-h.broadcast:
-			for client := range h.clients {
+		case message := <-tH.broadcast:
+			for client := range tH.clients {
 				select {
 				case client.send <- message:
 				default:
 					close(client.send)
-					delete(h.clients, client)
+					delete(tH.clients, client)
 				}
 			}
 		}
+
+		if stopLoop {
+			break
+		}
 	}
+
+	delete(mapThreadHub, tH.threadID)
 }
