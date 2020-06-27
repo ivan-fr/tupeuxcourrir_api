@@ -70,7 +70,9 @@ func PutPhoto(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func() {
+		_ = src.Close()
+	}()
 
 	mapUser := ctx.Get("user").(orm.H)
 	user := mapUser["User"].(*models.User)
@@ -100,7 +102,9 @@ func PutPhoto(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer func() {
+		_ = dst.Close()
+	}()
 
 	// Copy
 	if _, err = io.Copy(dst, src); err != nil {
