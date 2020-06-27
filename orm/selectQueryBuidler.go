@@ -300,7 +300,7 @@ func (sQB *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
 	return sQB
 }
 
-func (sQB *SelectQueryBuilder) ApplyQueryToSlice() (H, error) {
+func (sQB *SelectQueryBuilder) ApplyPartialQueryRow() (H, error) {
 	if sQB.SectionSelect == "" && sQB.SectionAggregate == "" {
 		panic("configuration not supported")
 	}

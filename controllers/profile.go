@@ -22,6 +22,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func GetThreads(ctx echo.Context) error {
+	return errors.New("")
+}
+
 func PutAddress(ctx echo.Context) error {
 	var form forms.PutAddressForm
 
