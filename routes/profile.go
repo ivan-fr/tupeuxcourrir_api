@@ -16,4 +16,8 @@ func JWTProfileRoutes(group *echo.Group) {
 	group.POST("/sendForValidateMail", controllers.SendForValidateMail, middleware.JWTWithConfig(JwtConfig))
 	group.PUT("/putPhoto", controllers.PutPhoto, middleware.JWTWithConfig(JwtConfig))
 	group.PUT("/putAddress", controllers.PutAddress, middleware.JWTWithConfig(JwtConfig))
+
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementPartialUserFromJwt(config.JwtLoginSubject)
+
+	group.GET("/threads", controllers.GetThreads, middleware.JWTWithConfig(JwtConfig))
 }

@@ -14,6 +14,7 @@ type ImplementJWTUser struct {
 	addInitiatedThread bool
 	addRoles           bool
 	addReceivedThread  bool
+	GiveMeSQB          bool
 	subject            string
 }
 
@@ -45,6 +46,10 @@ func ImplementUserFromJwt(subject string) middleware.JWTSuccessHandler {
 	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{subject: subject})
 }
 
+func ImplementPartialUserFromJwt(subject string) middleware.JWTSuccessHandler {
+	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{subject: subject, GiveMeSQB: true})
+}
+
 func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccessHandler {
 	return func(ctx echo.Context) {
 		JWTContext := ctx.Get("JWTContext").(*jwt.Token)
@@ -68,14 +73,17 @@ func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccess
 
 			sQB = sQB.Where(orm.And(orm.H{"IdUser": claims.UserID}))
 
-			var err error
-			mapUser, err = sQB.ApplyQueryRow()
+			if iJU.GiveMeSQB {
+				ctx.Set("uSQB", sQB)
+			} else {
+				var err error
+				mapUser, err = sQB.ApplyQueryRow()
 
-			if err != nil {
-				panic(err)
+				if err != nil {
+					panic(err)
+				}
+				ctx.Set("user", mapUser)
 			}
 		}
-
-		ctx.Set("user", mapUser)
 	}
 }
