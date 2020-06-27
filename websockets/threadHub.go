@@ -14,16 +14,16 @@ type ThreadHub struct {
 	threadID int
 
 	// Registered clients.
-	clients map[*Client]bool
+	clients map[*ThreadClient]bool
 
 	// Inbound messages from the clients.
-	broadcast chan []byte
+	broadcast chan *models.Message
 
 	// Register requests from the clients.
-	register chan *Client
+	register chan *ThreadClient
 
 	// Unregister requests from clients.
-	unregister chan *Client
+	unregister chan *ThreadClient
 }
 
 func GetThreadHub(thread *models.Thread) *ThreadHub {
@@ -32,10 +32,10 @@ func GetThreadHub(thread *models.Thread) *ThreadHub {
 	if !ok {
 		mapThreadHub[thread.IdThread] = &ThreadHub{
 			threadID:   thread.IdThread,
-			broadcast:  make(chan []byte),
-			register:   make(chan *Client),
-			unregister: make(chan *Client),
-			clients:    make(map[*Client]bool),
+			broadcast:  make(chan *models.Message),
+			register:   make(chan *ThreadClient),
+			unregister: make(chan *ThreadClient),
+			clients:    make(map[*ThreadClient]bool),
 		}
 
 		defer func() {
