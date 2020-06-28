@@ -1,10 +1,12 @@
 package orm
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -151,5 +153,22 @@ func getComparativeFormat(comparative string) string {
 		return "<="
 	default:
 		panic("undefined format")
+	}
+}
+
+func getNullFieldInstance(field interface{}) interface{} {
+	switch field.(type) {
+	case string:
+		return sql.NullString{}
+	case bool:
+		return sql.NullBool{}
+	case int:
+		return sql.NullInt64{}
+	case float64:
+		return sql.NullFloat64{}
+	case time.Time:
+		return sql.NullTime{}
+	default:
+		return nil
 	}
 }

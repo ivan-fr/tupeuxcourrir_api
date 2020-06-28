@@ -9,11 +9,18 @@ import (
 	"time"
 )
 
+type aggregate struct {
+	column    string
+	aggregate string
+	value     interface{}
+}
+
 type QueryApplier struct {
 	model                   interface{}
 	relationshipTargetOrder map[string][]interface{}
 	columns                 []string
 	aggregates              H
+	effectiveAggregates     []*aggregate
 	alreadyHydrate          bool
 }
 
@@ -23,18 +30,7 @@ func (qA *QueryApplier) getNecessaryNullFieldsForRelationshipWithOrder(relations
 	var nullFields []interface{}
 
 	for i := 0; i < valueOf.NumField(); i++ {
-		switch valueOf.Field(i).Interface().(type) {
-		case string:
-			nullFields = append(nullFields, sql.NullString{})
-		case bool:
-			nullFields = append(nullFields, sql.NullBool{})
-		case int:
-			nullFields = append(nullFields, sql.NullInt64{})
-		case time.Time:
-			nullFields = append(nullFields, sql.NullTime{})
-		default:
-			nullFields = append(nullFields, nil)
-		}
+		nullFields = append(nullFields, getNullFieldInstance(valueOf.Field(i).Interface()))
 	}
 
 	return nullFields
@@ -62,6 +58,9 @@ func (qA *QueryApplier) reconstructTheMapFromHydrate(theMap H, nullFields map[st
 				case int:
 					sN := currentNullFields[k].(sql.NullInt64)
 					nullFieldIsValid = sN.Valid
+				case float64:
+					sN := currentNullFields[k].(sql.NullFloat64)
+					nullFieldIsValid = sN.Valid
 				case time.Time:
 					sN := currentNullFields[k].(sql.NullTime)
 					nullFieldIsValid = sN.Valid
@@ -78,6 +77,9 @@ func (qA *QueryApplier) reconstructTheMapFromHydrate(theMap H, nullFields map[st
 					case bool:
 						sN := currentNullFields[k].(sql.NullBool)
 						valueOf.Field(k).SetBool(sN.Bool)
+					case float64:
+						sN := currentNullFields[k].(sql.NullFloat64)
+						valueOf.Field(k).SetFloat(sN.Float64)
 					case int:
 						sN := currentNullFields[k].(sql.NullInt64)
 						valueOf.Field(k).SetInt(sN.Int64)
@@ -158,7 +160,7 @@ func (qA *QueryApplier) fullHydrate(scan func(dest ...interface{}) error) error 
 
 func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) error {
 	reflectModel := reflect.ValueOf(qA.model).Elem()
-	var relationshipMap = make(H)
+	var theRelationshipMap = make(H)
 
 	var addrFields []interface{}
 	for _, column := range qA.columns {
@@ -168,15 +170,15 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 		case 1:
 			addrFields = append(addrFields, reflectModel.FieldByName(splitDot[0]).Addr().Interface())
 		case 2:
-			if _, ok := relationshipMap[splitDot[0]]; !ok {
-				relationshipMap[splitDot[0]] = newModel(qA.relationshipTargetOrder[splitDot[0]][0])
+			if _, ok := theRelationshipMap[splitDot[0]]; !ok {
+				theRelationshipMap[splitDot[0]] = newModel(qA.relationshipTargetOrder[splitDot[0]][0])
 			}
 
 			addrFields = append(addrFields,
-				reflect.ValueOf(relationshipMap[splitDot[0]]).Elem().FieldByName(splitDot[1]).Addr().Interface())
+				reflect.ValueOf(theRelationshipMap[splitDot[0]]).Elem().FieldByName(splitDot[1]).Addr().Interface())
 		case 3:
 			relationshipName := fmt.Sprintf("%v<sub>%v", splitDot[0], splitDot[1])
-			if _, ok := relationshipMap[relationshipName]; !ok {
+			if _, ok := theRelationshipMap[relationshipName]; !ok {
 				sliceIndex := -1
 				for i, targetModel := range qA.relationshipTargetOrder[splitDot[0]] {
 					if getModelName(targetModel) == splitDot[1] {
@@ -185,44 +187,19 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 					}
 				}
 
-				relationshipMap[relationshipName] = newModel(qA.relationshipTargetOrder[splitDot[0]][sliceIndex])
+				theRelationshipMap[relationshipName] = newModel(qA.relationshipTargetOrder[splitDot[0]][sliceIndex])
 			}
 
 			addrFields = append(addrFields,
-				reflect.ValueOf(relationshipMap[relationshipName]).Elem().FieldByName(splitDot[1]).Addr().Interface())
+				reflect.ValueOf(theRelationshipMap[relationshipName]).Elem().FieldByName(splitDot[1]).Addr().Interface())
 		}
 	}
 
-	for _, column := range qA.aggregates {
-		splitDot := strings.Split(column.(string), ".")
-
-		switch len(splitDot) {
-		case 1:
-			addrFields = append(addrFields, reflectModel.FieldByName(splitDot[0]).Addr().Interface())
-		case 2:
-			if _, ok := relationshipMap[splitDot[0]]; !ok {
-				relationshipMap[splitDot[0]] = newModel(qA.relationshipTargetOrder[splitDot[0]][0])
-			}
-
-			addrFields = append(addrFields,
-				reflect.ValueOf(relationshipMap[splitDot[0]]).Elem().FieldByName(splitDot[1]).Addr().Interface())
-		case 3:
-			relationshipName := fmt.Sprintf("%v<sub>%v", splitDot[0], splitDot[1])
-			if _, ok := relationshipMap[relationshipName]; !ok {
-				sliceIndex := -1
-				for i, targetModel := range qA.relationshipTargetOrder[splitDot[0]] {
-					if getModelName(targetModel) == splitDot[1] {
-						sliceIndex = i
-						break
-					}
-				}
-
-				relationshipMap[relationshipName] = newModel(qA.relationshipTargetOrder[splitDot[0]][sliceIndex])
-			}
-
-			addrFields = append(addrFields,
-				reflect.ValueOf(relationshipMap[relationshipName]).Elem().FieldByName(splitDot[1]).Addr().Interface())
-		}
+	for aAggregate, column := range qA.aggregates {
+		qA.effectiveAggregates = append(qA.effectiveAggregates,
+			&aggregate{column: column.(string), aggregate: aAggregate})
+		addr := reflect.ValueOf(qA.effectiveAggregates[len(qA.effectiveAggregates)-1]).Elem().FieldByName("value").Addr().Interface()
+		addrFields = append(addrFields, addr)
 	}
 
 	err := scan(addrFields...)
