@@ -161,9 +161,10 @@ func (qA *QueryApplier) fullHydrate(scan func(dest ...interface{}) error) error 
 func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) error {
 	reflectModel := reflect.ValueOf(qA.model).Elem()
 	var theRelationshipMap = make(H)
+	var nullFields = make(map[int]interface{})
 
 	var addrFields []interface{}
-	for _, column := range qA.columns {
+	for i, column := range qA.columns {
 		splitDot := strings.Split(column, ".")
 
 		switch len(splitDot) {
@@ -174,8 +175,13 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 				theRelationshipMap[splitDot[0]] = newModel(qA.relationshipTargetOrder[splitDot[0]][0])
 			}
 
-			addrFields = append(addrFields,
-				reflect.ValueOf(theRelationshipMap[splitDot[0]]).Elem().FieldByName(splitDot[1]).Addr().Interface())
+			theField := reflect.ValueOf(theRelationshipMap[splitDot[0]]).Elem().FieldByName(splitDot[1])
+			if nullField := getNullFieldInstance(theField.Interface()); nullField == nil {
+				addrFields = append(addrFields, theField.Addr().Interface())
+			} else {
+				nullFields[i] = &nullField
+				addrFields = append(addrFields, nullFields[i])
+			}
 		case 3:
 			relationshipName := fmt.Sprintf("%v<sub>%v", splitDot[0], splitDot[1])
 			if _, ok := theRelationshipMap[relationshipName]; !ok {
@@ -190,8 +196,13 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 				theRelationshipMap[relationshipName] = newModel(qA.relationshipTargetOrder[splitDot[0]][sliceIndex])
 			}
 
-			addrFields = append(addrFields,
-				reflect.ValueOf(theRelationshipMap[relationshipName]).Elem().FieldByName(splitDot[1]).Addr().Interface())
+			theField := reflect.ValueOf(theRelationshipMap[relationshipName]).Elem().FieldByName(splitDot[1])
+			if nullField := getNullFieldInstance(theField.Interface()); nullField == nil {
+				addrFields = append(addrFields, theField.Addr().Interface())
+			} else {
+				nullFields[i] = &nullField
+				addrFields = append(addrFields, nullFields[i])
+			}
 		}
 	}
 
@@ -203,6 +214,11 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 	}
 
 	err := scan(addrFields...)
+
+	if err != nil && len(nullFields) > 0 {
+		qA.reconstructTheMapFromHydrate(theRelationshipMap, nullFields)
+		qA.hydrateRelationshipsInModel(theRelationshipMap)
+	}
 
 	return err
 }
