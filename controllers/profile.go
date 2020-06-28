@@ -23,7 +23,14 @@ import (
 )
 
 func GetThreads(ctx echo.Context) error {
-	return errors.New("")
+	uSQB := ctx.Get("uSQB").(*orm.SelectQueryBuilder)
+	data, err := uSQB.ApplyQuery()
+
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, data)
 }
 
 func PutAddress(ctx echo.Context) error {

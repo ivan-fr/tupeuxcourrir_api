@@ -60,7 +60,7 @@ func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccess
 			}
 
 			if iJU.AddReceivedThread {
-				sQB = sQB.Consider("ReceiverThreads")
+				sQB = sQB.Consider("ReceivedThreads")
 			}
 
 			if iJU.AddRoles {

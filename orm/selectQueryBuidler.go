@@ -300,84 +300,7 @@ func (sQB *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
 	return sQB
 }
 
-func (sQB *SelectQueryBuilder) ApplyPartialQueryRow() (H, error) {
-	if sQB.SectionSelect == "" && sQB.SectionAggregate == "" {
-		panic("configuration not supported")
-	}
-
-	connection := db.GetConnectionFromDB()
-	defer sQB.Clean()
-
-	row := connection.Db.QueryRow(sQB.constructSql(), sQB.getStmts()...)
-
-	var columnsResult = make([]interface{}, len(sQB.columns)+len(sQB.aggregates))
-
-	var addrColumnsResult []interface{}
-	for i := 0; i < len(columnsResult); i++ {
-		addrColumnsResult = append(addrColumnsResult, &columnsResult[i])
-	}
-
-	err := row.Scan(addrColumnsResult...)
-
-	var mapColumnsResult = make(H)
-
-	i := 0
-	for _, value := range sQB.columns {
-		mapColumnsResult[value] = columnsResult[i]
-		i++
-	}
-
-	for key, value := range sQB.aggregates {
-		mapColumnsResult[fmt.Sprintf("%v(%v)", key, value)] = columnsResult[i]
-		i++
-	}
-
-	return mapColumnsResult, err
-}
-
-func (sQB *SelectQueryBuilder) ApplyPartialQuery() ([]H, error) {
-	if sQB.SectionSelect == "" && sQB.SectionAggregate == "" {
-		panic("configuration not supported")
-	}
-
-	connection := db.GetConnectionFromDB()
-	var columnsMatrix []H
-	defer sQB.Clean()
-
-	rows, err := connection.Db.Query(sQB.constructSql(), sQB.getStmts()...)
-
-	if err == nil {
-		for rows.Next() {
-			var columnsResult = make([]interface{}, len(sQB.columns)+len(sQB.aggregates))
-
-			var addrColumnsResult []interface{}
-			for i := 0; i < len(columnsResult); i++ {
-				addrColumnsResult = append(addrColumnsResult, &columnsResult[i])
-			}
-
-			err = rows.Scan(addrColumnsResult...)
-
-			var mapColumnsResult = make(H)
-
-			i := 0
-			for _, value := range sQB.columns {
-				mapColumnsResult[value] = columnsResult[i]
-				i++
-			}
-
-			for key, value := range sQB.aggregates {
-				mapColumnsResult[fmt.Sprintf("%v(%v)", key, value)] = columnsResult[i]
-				i++
-			}
-
-			columnsMatrix = append(columnsMatrix, mapColumnsResult)
-		}
-	}
-
-	return columnsMatrix, err
-}
-
-func (sQB *SelectQueryBuilder) ApplyQuery() ([]H, error) {
+func (sQB *SelectQueryBuilder) ApplyQuery() error {
 	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
 		panic("configuration not supported")
 	}
@@ -385,25 +308,22 @@ func (sQB *SelectQueryBuilder) ApplyQuery() ([]H, error) {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	var modelsMatrix []H
 	rows, err := connection.Db.Query(sQB.constructSql(), sQB.getStmts()...)
 
 	if err == nil {
-		var modelsList H
 		for rows.Next() {
-			modelsList, err = sQB.hydrate(rows.Scan)
+			err = sQB.hydrate(rows.Scan)
 
 			if err != nil {
 				break
 			}
-			modelsMatrix = append(modelsMatrix, modelsList)
 		}
 	}
 
-	return modelsMatrix, err
+	return err
 }
 
-func (sQB *SelectQueryBuilder) ApplyQueryRow() (H, error) {
+func (sQB *SelectQueryBuilder) ApplyQueryRow() error {
 	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
 		panic("configuration not supported")
 	}
@@ -412,9 +332,9 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() (H, error) {
 	defer sQB.Clean()
 
 	row := connection.Db.QueryRow(sQB.constructSql(), sQB.getStmts()...)
-	theMap, err := sQB.hydrate(row.Scan)
+	err := sQB.hydrate(row.Scan)
 
-	return theMap, err
+	return err
 }
 
 func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
