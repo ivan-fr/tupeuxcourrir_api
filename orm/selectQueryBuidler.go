@@ -34,31 +34,23 @@ type SelectQueryBuilder struct {
 	RollUp bool
 }
 
-func (sQB *SelectQueryBuilder) getAlias(fieldRelationshipName, targetModelName string) string {
-	reflectValueOf := reflect.ValueOf(sQB.relationshipTargetOrder)
-	relationshipTargets := reflectValueOf.MapIndex(reflect.ValueOf(fieldRelationshipName))
-
-	var sliceIndex int
+func (sQB *SelectQueryBuilder) getAlias(fieldRelationshipName, wantedModel string) string {
+	var sliceIndex = -1
 
 	switch {
-	case 1 == relationshipTargets.Len() && targetModelName == "":
-		sliceIndex = 1
-		targetModelName = getModelName(relationshipTargets.Index(0).Interface())
-	case targetModelName != "":
-		for i := 0; i < relationshipTargets.Len(); i++ {
-			if getModelName(relationshipTargets.Index(i).Interface()) == targetModelName {
-				sliceIndex = i + 1
-				break
-			}
-		}
+	case 1 == len(sQB.relationshipTargets[fieldRelationshipName]) && wantedModel == "":
+		sliceIndex = 0
+		wantedModel = getModelName(sQB.relationshipTargets[fieldRelationshipName][0])
+	case wantedModel != "":
+		sliceIndex = sQB.getIndexOfWantedModelFromRelationshipTargets(fieldRelationshipName, wantedModel)
 	}
 
-	if sliceIndex == 0 {
-		panic("undefined targetModelName in relationship")
+	if sliceIndex == -1 {
+		panic("undefined wantedModel in relationship")
 	}
 
 	return fmt.Sprintf("%v%v%v", getAbbreviation(fieldRelationshipName),
-		getAbbreviation(targetModelName),
+		getAbbreviation(wantedModel),
 		sliceIndex)
 }
 
