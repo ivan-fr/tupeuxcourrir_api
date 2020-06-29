@@ -86,10 +86,10 @@ func (qA *QueryApplier) mergeRelationshipModelsFromNullFields(theMap H, nullFiel
 }
 
 func (qA *QueryApplier) hydrateRelationshipsInModel(theMap H) {
-	valueOf := reflect.ValueOf(qA.model).Elem()
+	valueOfMainModel := reflect.ValueOf(qA.model).Elem()
 
 	for _, fieldName := range qA.orderConsideration {
-		concernField := valueOf.FieldByName(fieldName).Interface()
+		concernField := valueOfMainModel.FieldByName(fieldName).Interface()
 		switch concernField.(type) {
 		case *ManyToManyRelationShip:
 			relation := concernField.(*ManyToManyRelationShip)
@@ -238,7 +238,7 @@ func (qA *QueryApplier) hydrate(scan func(dest ...interface{}) error) error {
 		err = qA.partialHydrate(scan)
 	}
 
-	if err != nil {
+	if err == nil {
 		qA.alreadyHydrate = true
 	}
 
