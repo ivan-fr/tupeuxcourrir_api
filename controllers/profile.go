@@ -30,7 +30,7 @@ func GetThreads(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, data)
+	return ctx.JSON(http.StatusOK, uSQB.Model)
 }
 
 func PutAddress(ctx echo.Context) error {

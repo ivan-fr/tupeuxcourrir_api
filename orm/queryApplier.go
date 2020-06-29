@@ -129,8 +129,11 @@ func (qA *QueryApplier) fullHydrate(scan func(dest ...interface{}) error) error 
 
 			for k, nullField := range nullFields[fmt.Sprintf("%v_%v", fieldName, j)] {
 				if nullField == nil {
-					addr := reflect.ValueOf(theRelationshipMap[fmt.Sprintf("%v_%v", fieldName, j)]).Field(k).Addr().Interface()
-					addressNullFields = append(addressNullFields, addr)
+					theField := reflect.ValueOf(theRelationshipMap[fmt.Sprintf("%v_%v", fieldName, j)]).Elem().Field(k)
+					if !isRelationshipField(theField) {
+						addr := theField.Addr().Interface()
+						addressNullFields = append(addressNullFields, addr)
+					}
 				} else {
 					addressNullFields = append(addressNullFields, &nullField)
 				}
