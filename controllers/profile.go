@@ -24,7 +24,7 @@ import (
 
 func GetThreads(ctx echo.Context) error {
 	uSQB := ctx.Get("uSQB").(*orm.SelectQueryBuilder)
-	data, err := uSQB.ApplyQuery()
+	err := uSQB.ApplyQuery()
 
 	if err != nil {
 		return err

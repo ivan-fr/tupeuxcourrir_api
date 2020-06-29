@@ -20,16 +20,15 @@ func CheckMail(ctx echo.Context) error {
 		return errors.New("wrong jwt subject")
 	}
 
-	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
+	concernUser := models.NewUser()
+	sQB := orm.GetSelectQueryBuilder(concernUser).
 		Where(orm.And(orm.H{"IdUser": claims.UserID}))
 
-	mapUser, err := sQB.ApplyQueryRow()
+	err := sQB.ApplyQueryRow()
 
 	if err != nil {
 		return err
 	}
-
-	concernUser := mapUser["User"].(*models.User)
 
 	if concernUser.CheckedEmail {
 		return ctx.JSON(http.StatusUnauthorized, echo.Map{})

@@ -59,16 +59,15 @@ func Login(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
-	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
+	user := models.NewUser()
+	sQB := orm.GetSelectQueryBuilder(user).
 		Where(orm.And(orm.H{"Email": loginForm.Email}))
 
-	mapUser, err := sQB.ApplyQueryRow()
+	err := sQB.ApplyQueryRow()
 
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
-
-	user := mapUser["User"].(*models.User)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword),
 		[]byte(loginForm.EncryptedPassword)); err != nil {
@@ -104,16 +103,15 @@ func ForgotPassword(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
-	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
+	user := models.NewUser()
+	sQB := orm.GetSelectQueryBuilder(user).
 		Where(orm.And(orm.H{"Email": forgotPasswordForm.Email}))
 
-	mapUser, err := sQB.ApplyQueryRow()
+	err := sQB.ApplyQueryRow()
 
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
-
-	user := mapUser["User"].(*models.User)
 
 	var execute = true
 
@@ -171,11 +169,13 @@ func ForgotPassword(ctx echo.Context) error {
 }
 
 func EditPasswordFromLink(ctx echo.Context) error {
-	mapUser := ctx.Get("user").(orm.H)
+	concernUser := ctx.Get("user")
 
-	if mapUser == nil {
+	if concernUser == nil {
 		return errors.New("wrong jwt subject")
 	}
+
+	concernUser = concernUser.(*models.User)
 
 	var form forms.EditPasswordForm
 
@@ -190,8 +190,6 @@ func EditPasswordFromLink(ctx echo.Context) error {
 	if form.EncryptedPassword != form.ConfirmPassword {
 		return errors.New("the password aren't same")
 	}
-
-	concernUser := mapUser["User"].(*models.User)
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
 	if err != nil {

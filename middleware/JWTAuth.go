@@ -50,10 +50,10 @@ func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccess
 	return func(ctx echo.Context) {
 		JWTContext := ctx.Get("JWTContext").(*jwt.Token)
 		claims := JWTContext.Claims.(*JwtCustomClaims)
-		var mapUser orm.H
 
 		if claims.Subject == iJU.Subject {
-			sQB := orm.GetSelectQueryBuilder(models.NewUser())
+			user := models.NewUser()
+			sQB := orm.GetSelectQueryBuilder(user)
 
 			if iJU.AddInitiatedThread {
 				sQB = sQB.Consider("InitiatedThreads")
@@ -73,12 +73,18 @@ func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) middleware.JWTSuccess
 				ctx.Set("uSQB", sQB)
 			} else {
 				var err error
-				mapUser, err = sQB.ApplyQueryRow()
+				err = sQB.ApplyQueryRow()
 
 				if err != nil {
 					panic(err)
 				}
-				ctx.Set("user", mapUser)
+				ctx.Set("user", user)
+			}
+		} else {
+			if iJU.GiveMeSQB {
+				ctx.Set("uSQB", nil)
+			} else {
+				ctx.Set("user", nil)
 			}
 		}
 	}

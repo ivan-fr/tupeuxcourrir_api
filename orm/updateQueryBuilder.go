@@ -146,7 +146,7 @@ func (uQB *UpdateQueryBuilder) ConstructSql() string {
 		pkFieldValue := reflect.ValueOf(uQB.referenceModel).Elem().FieldByName(pkFieldName)
 
 		if pkFieldValue.IsZero() {
-			panic("your model haven't already an ID")
+			panic("your Model haven't already an ID")
 		}
 
 		uQB.Where(And(H{pkFieldName: pkFieldValue.Interface()}))
