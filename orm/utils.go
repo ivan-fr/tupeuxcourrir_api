@@ -95,7 +95,9 @@ func newModel(model interface{}) interface{} {
 		modelValue = modelValue.Elem()
 	}
 
-	return reflect.New(modelValue).Interface()
+	newModelValue := reflect.New(modelValue)
+
+	return newModelValue.Interface()
 }
 
 func getAddrFieldsToScan(model interface{}) ([]interface{}, error) {
