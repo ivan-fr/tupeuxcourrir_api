@@ -59,8 +59,7 @@ func Login(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
-	user := models.NewUser()
-	sQB := orm.GetSelectQueryBuilder(user).
+	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
 		Where(orm.And(orm.H{"Email": loginForm.Email}))
 
 	err := sQB.ApplyQueryRow()
@@ -68,6 +67,8 @@ func Login(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
+
+	user := sQB.EffectiveModel.(*models.User)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword),
 		[]byte(loginForm.EncryptedPassword)); err != nil {
@@ -103,15 +104,16 @@ func ForgotPassword(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
 	}
 
-	user := models.NewUser()
-	sQB := orm.GetSelectQueryBuilder(user).
+	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
 		Where(orm.And(orm.H{"Email": forgotPasswordForm.Email}))
 
 	err := sQB.ApplyQueryRow()
 
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		return err
 	}
+
+	user := sQB.EffectiveModel.(*models.User)
 
 	var execute = true
 

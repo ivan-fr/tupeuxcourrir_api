@@ -200,6 +200,7 @@ func (sQB *SelectQueryBuilder) SetModel(model interface{}) {
 	sQB.Clean()
 	sQB.model = nil
 	sQB.model = model
+	sQB.QueryApplier.EffectiveModel = nil
 }
 
 func (sQB *SelectQueryBuilder) Clean() {

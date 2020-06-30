@@ -271,7 +271,6 @@ func (qA *QueryApplier) Clean() {
 	qA.relationshipTargets = make(map[string][]interface{})
 	qA.orderConsideration = make([]string, 0)
 	qA.columns = make([]string, 0)
-	qA.EffectiveModel = nil
 	qA.EffectiveAggregates = make([]*aggregate, 0)
 	qA.aggregates = make(H)
 }
