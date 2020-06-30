@@ -25,14 +25,13 @@ type User struct {
 	ReceivedThreads          *orm.OneToManyRelationShip
 }
 
-func NewUser() *User {
-	usersRoles := NewUsersRole()
-	thread := NewThread()
+func (user *User) PutRelationshipConfig() {
+	user.Roles = &orm.ManyToManyRelationShip{Target: &Role{}, IntermediateTarget: &UsersRole{}}
+	user.InitiatedThreads = &orm.OneToManyRelationShip{Target: &Thread{}, FieldMTO: "InitiatorThread"}
+	user.ReceivedThreads = &orm.OneToManyRelationShip{Target: &Thread{}, FieldMTO: "ReceiverThread"}
+}
+
+func NewUser() orm.Model {
 	user := User{}
-
-	user.Roles = &orm.ManyToManyRelationShip{Target: &Role{}, IntermediateTarget: usersRoles}
-	user.InitiatedThreads = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "InitiatorThread"}
-	user.ReceivedThreads = &orm.OneToManyRelationShip{Target: thread, FieldMTO: "ReceiverThread"}
-
 	return &user
 }

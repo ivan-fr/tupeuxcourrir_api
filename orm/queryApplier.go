@@ -13,13 +13,13 @@ type aggregate struct {
 }
 
 type QueryApplier struct {
-	model               interface{}
+	model               Model
 	relationshipTargets map[string][]interface{}
 	orderConsideration  []string
 	columns             []string
 	aggregates          H
 	EffectiveAggregates []*aggregate
-	EffectiveModel      interface{}
+	EffectiveModel      Model
 }
 
 func (qA *QueryApplier) getNecessaryNullFieldsForRelationshipWithOrder(relationship interface{}) []interface{} {
@@ -229,7 +229,8 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 func (qA *QueryApplier) hydrate(scan func(dest ...interface{}) error) error {
 	var err error
 
-	qA.EffectiveModel = newModel(qA.model)
+	qA.EffectiveModel = newModel(qA.model).(Model)
+	qA.EffectiveModel.PutRelationshipConfig()
 
 	switch {
 	case len(qA.columns) == 0 && len(qA.aggregates) == 0:
@@ -246,16 +247,27 @@ func (qA *QueryApplier) addRelationship(fieldName string, relationship interface
 
 	switch relationship.(type) {
 	case *ManyToManyRelationShip:
+		MTM := relationship.(*ManyToManyRelationShip)
+
+		MTM.IntermediateTarget.PutRelationshipConfig()
+		MTM.Target.PutRelationshipConfig()
+
 		qA.relationshipTargets[fieldName] = append(qA.relationshipTargets[fieldName],
-			relationship.(*ManyToManyRelationShip).IntermediateTarget)
+			MTM.IntermediateTarget)
 		qA.relationshipTargets[fieldName] = append(qA.relationshipTargets[fieldName],
-			relationship.(*ManyToManyRelationShip).Target)
+			MTM.Target)
 	case *ManyToOneRelationShip:
+		MTO := relationship.(*ManyToOneRelationShip)
+		MTO.Target.PutRelationshipConfig()
+
 		qA.relationshipTargets[fieldName] = append(qA.relationshipTargets[fieldName],
-			relationship.(*ManyToOneRelationShip).Target)
+			MTO.Target)
 	case *OneToManyRelationShip:
+		OTM := relationship.(*OneToManyRelationShip)
+		OTM.Target.PutRelationshipConfig()
+
 		qA.relationshipTargets[fieldName] = append(qA.relationshipTargets[fieldName],
-			relationship.(*OneToManyRelationShip).Target)
+			OTM.Target)
 	default:
 		result = false
 	}

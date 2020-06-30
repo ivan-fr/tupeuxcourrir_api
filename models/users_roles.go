@@ -10,10 +10,12 @@ type UsersRole struct {
 	Role         *orm.ManyToOneRelationShip
 }
 
-func NewUsersRole() *UsersRole {
-	usersRoles := UsersRole{}
+func (usersRoles *UsersRole) PutRelationshipConfig() {
 	usersRoles.User = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "UsersIdUser"}
 	usersRoles.Role = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "RolesIdRole"}
+}
 
+func NewUsersRole() orm.Model {
+	usersRoles := UsersRole{}
 	return &usersRoles
 }

@@ -16,10 +16,12 @@ type Message struct {
 	Thread         *orm.ManyToOneRelationShip
 }
 
-func NewMessage() *Message {
-	message := Message{}
+func (message *Message) PutRelationshipConfig() {
 	message.User = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "UserIdUser"}
 	message.Thread = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "ThreadIdThread"}
+}
 
+func NewMessage() interface{} {
+	message := Message{}
 	return &message
 }

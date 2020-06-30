@@ -196,9 +196,9 @@ func (sQB *SelectQueryBuilder) Where(logical *Logical) *SelectQueryBuilder {
 	return sQB
 }
 
-func (sQB *SelectQueryBuilder) SetModel(model interface{}) {
+func (sQB *SelectQueryBuilder) SetModel(model Model) {
 	sQB.Clean()
-	sQB.model = nil
+	model.PutRelationshipConfig()
 	sQB.model = model
 	sQB.QueryApplier.EffectiveModel = nil
 }
@@ -330,7 +330,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() error {
 	return err
 }
 
-func GetSelectQueryBuilder(model interface{}) *SelectQueryBuilder {
+func GetSelectQueryBuilder(model Model) *SelectQueryBuilder {
 	sQB := &SelectQueryBuilder{}
 	sQB.aliasFactory = &ContextAdapterFactory{getAliasFunc: sQB.getAlias}
 	sQB.SetModel(model)

@@ -17,12 +17,13 @@ type Thread struct {
 	Messages              *orm.OneToManyRelationShip
 }
 
-func NewThread() *Thread {
-	message := NewMessage()
-
-	thread := Thread{}
+func (thread *Thread) PutRelationshipConfig() {
 	thread.InitiatorThread = &orm.ManyToOneRelationShip{Target: &User{}, AssociateColumn: "InitiatorThreadIdUser"}
 	thread.ReceiverThread = &orm.ManyToOneRelationShip{Target: &Thread{}, AssociateColumn: "ReceiverThreadIdUser"}
-	thread.Messages = &orm.OneToManyRelationShip{Target: message, FieldMTO: "Thread"}
+	thread.Messages = &orm.OneToManyRelationShip{Target: &Message{}, FieldMTO: "Thread"}
+}
+
+func NewThread() interface{} {
+	thread := Thread{}
 	return &thread
 }

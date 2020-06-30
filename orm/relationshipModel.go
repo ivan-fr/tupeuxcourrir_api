@@ -1,20 +1,24 @@
 package orm
 
+type Model interface {
+	PutRelationshipConfig()
+}
+
 type ManyToManyRelationShip struct {
-	Target                      interface{}
-	IntermediateTarget          interface{}
+	Target                      Model
+	IntermediateTarget          Model
 	EffectiveTargets            []interface{}
 	EffectiveIntermediateTarget interface{}
 }
 
 type ManyToOneRelationShip struct {
-	Target          interface{}
+	Target          Model
 	EffectiveTarget interface{}
 	AssociateColumn string
 }
 
 type OneToManyRelationShip struct {
-	Target           interface{}
+	Target           Model
 	EffectiveTargets []interface{}
 	FieldMTO         string
 }

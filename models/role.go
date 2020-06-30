@@ -8,10 +8,11 @@ type Role struct {
 	Users   *orm.ManyToManyRelationShip
 }
 
-func NewRole() *Role {
-	usersRoles := NewUsersRole()
-	role := Role{}
-	role.Users = &orm.ManyToManyRelationShip{Target: &User{}, IntermediateTarget: usersRoles}
+func (role *Role) PutRelationshipConfig() {
+	role.Users = &orm.ManyToManyRelationShip{Target: &User{}, IntermediateTarget: &UsersRole{}}
+}
 
+func NewRole() interface{} {
+	role := Role{}
 	return &role
 }

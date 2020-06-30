@@ -1,8 +1,33 @@
 [
   {
     "method": "POST",
-    "path": "/profile/sendForValidateMail",
-    "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
+    "path": "/auth/login",
+    "name": "tupeuxcourrir_api/controllers.Login"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/jwt/editPassword",
+    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
+  },
+  {
+    "method": "POST",
+    "path": "/checker/checkMail",
+    "name": "tupeuxcourrir_api/controllers.CheckMail"
+  },
+  {
+    "method": "PUT",
+    "path": "/profile/putPhoto",
+    "name": "tupeuxcourrir_api/controllers.PutPhoto"
+  },
+  {
+    "method": "PUT",
+    "path": "/profile/putAddress",
+    "name": "tupeuxcourrir_api/controllers.PutAddress"
+  },
+  {
+    "method": "GET",
+    "path": "/profile/threads",
+    "name": "tupeuxcourrir_api/controllers.GetThreads"
   },
   {
     "method": "GET",
@@ -26,32 +51,7 @@
   },
   {
     "method": "POST",
-    "path": "/auth/jwt/editPassword",
-    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
-  },
-  {
-    "method": "POST",
-    "path": "/checker/checkMail",
-    "name": "tupeuxcourrir_api/controllers.CheckMail"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/login",
-    "name": "tupeuxcourrir_api/controllers.Login"
-  },
-  {
-    "method": "PUT",
-    "path": "/profile/putPhoto",
-    "name": "tupeuxcourrir_api/controllers.PutPhoto"
-  },
-  {
-    "method": "PUT",
-    "path": "/profile/putAddress",
-    "name": "tupeuxcourrir_api/controllers.PutAddress"
-  },
-  {
-    "method": "GET",
-    "path": "/profile/threads",
-    "name": "tupeuxcourrir_api/controllers.GetThreads"
+    "path": "/profile/sendForValidateMail",
+    "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
   }
 ]
