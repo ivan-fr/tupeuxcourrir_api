@@ -67,7 +67,7 @@ func getPKFieldNameFromModel(model interface{}) string {
 		}
 	}
 
-	panic("no pk Model tag")
+	panic("no pk model tag")
 }
 
 func getAssociatedColumnFromReverse(target interface{}, targetStructFields reflect.Value) string {

@@ -62,7 +62,7 @@ func (sQB *SelectQueryBuilder) constructSql() string {
 		sQB.SectionSelect = "SELECT"
 	}
 
-	sQB.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(sQB.Model)))
+	sQB.SectionFrom = fmt.Sprintf("FROM %v", getTableName(getModelName(sQB.model)))
 
 	addPrefixToSections(sQB, " ", 1)
 
@@ -108,7 +108,7 @@ func (sQB *SelectQueryBuilder) addMTO(fieldName string, fieldInterface interface
 	stringJoin := fmt.Sprintf("INNER JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(target.Elem().Type().Name()),
 		aliasTarget,
-		getTableName(getModelName(sQB.Model)),
+		getTableName(getModelName(sQB.model)),
 		relationship.AssociateColumn,
 		aliasTarget,
 		getPKFieldNameFromModel(target.Interface()))
@@ -125,7 +125,7 @@ func (sQB *SelectQueryBuilder) addOTM(fieldName string, fieldInterface interface
 		targetMTO := target.FieldByName(relationship.FieldMTO).Interface().(*ManyToOneRelationShip)
 		targetAssociatedColumn = targetMTO.AssociateColumn
 	} else {
-		targetAssociatedColumn = getAssociatedColumnFromReverse(sQB.Model, target)
+		targetAssociatedColumn = getAssociatedColumnFromReverse(sQB.model, target)
 	}
 
 	aliasTarget := sQB.getAlias(fieldName, target.Type().Name())
@@ -133,8 +133,8 @@ func (sQB *SelectQueryBuilder) addOTM(fieldName string, fieldInterface interface
 	stringJoin := fmt.Sprintf("LEFT JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(target.Type().Name()),
 		aliasTarget,
-		getTableName(getModelName(sQB.Model)),
-		getPKFieldNameFromModel(sQB.Model),
+		getTableName(getModelName(sQB.model)),
+		getPKFieldNameFromModel(sQB.model),
 		aliasTarget,
 		targetAssociatedColumn)
 	sQB.SectionJoin = append(sQB.SectionJoin, stringJoin)
@@ -151,10 +151,10 @@ func (sQB *SelectQueryBuilder) addMTM(fieldName string, fieldInterface interface
 	stringJoin := fmt.Sprintf("LEFT JOIN %v %v ON %v.%v = %v.%v INNER JOIN %v %v ON %v.%v = %v.%v",
 		getTableName(intermediateTarget.Type().Name()),
 		aliasIntermediateTarget,
-		getTableName(getModelName(sQB.Model)),
-		getPKFieldNameFromModel(sQB.Model),
+		getTableName(getModelName(sQB.model)),
+		getPKFieldNameFromModel(sQB.model),
 		aliasIntermediateTarget,
-		getAssociatedColumnFromReverse(sQB.Model, intermediateTarget),
+		getAssociatedColumnFromReverse(sQB.model, intermediateTarget),
 
 		getTableName(target.Elem().Type().Name()),
 		aliasTarget,
@@ -198,8 +198,8 @@ func (sQB *SelectQueryBuilder) Where(logical *Logical) *SelectQueryBuilder {
 
 func (sQB *SelectQueryBuilder) SetModel(model interface{}) {
 	sQB.Clean()
-	sQB.Model = nil
-	sQB.Model = model
+	sQB.model = nil
+	sQB.model = model
 }
 
 func (sQB *SelectQueryBuilder) Clean() {
@@ -221,7 +221,7 @@ func (sQB *SelectQueryBuilder) Clean() {
 }
 
 func (sQB *SelectQueryBuilder) Consider(fieldName string) *SelectQueryBuilder {
-	reflectQueryBuilder := reflect.ValueOf(sQB.Model).Elem()
+	reflectQueryBuilder := reflect.ValueOf(sQB.model).Elem()
 	fieldInterface := reflectQueryBuilder.FieldByName(fieldName).Interface()
 
 	if sQB.addRelationship(fieldName, fieldInterface) {

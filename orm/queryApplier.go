@@ -1,7 +1,6 @@
 package orm
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -14,13 +13,13 @@ type aggregate struct {
 }
 
 type QueryApplier struct {
-	Model               interface{}
+	model               interface{}
 	relationshipTargets map[string][]interface{}
 	orderConsideration  []string
 	columns             []string
 	aggregates          H
 	EffectiveAggregates []*aggregate
-	alreadyHydrate      bool
+	EffectiveModel      interface{}
 }
 
 func (qA *QueryApplier) getNecessaryNullFieldsForRelationshipWithOrder(relationship interface{}) []interface{} {
@@ -86,7 +85,7 @@ func (qA *QueryApplier) mergeRelationshipModelsFromNullFields(theMap H, nullFiel
 }
 
 func (qA *QueryApplier) hydrateRelationshipsInModel(theMap H) {
-	valueOfMainModel := reflect.ValueOf(qA.Model).Elem()
+	valueOfMainModel := reflect.ValueOf(qA.EffectiveModel).Elem()
 
 	for _, fieldName := range qA.orderConsideration {
 		concernField := valueOfMainModel.FieldByName(fieldName).Interface()
@@ -110,7 +109,7 @@ func (qA *QueryApplier) hydrateRelationshipsInModel(theMap H) {
 }
 
 func (qA *QueryApplier) fullHydrate(scan func(dest ...interface{}) error) error {
-	addrFields, err := getAddrFieldsToScan(qA.Model)
+	addrFields, err := getAddrFieldsToScan(qA.EffectiveModel)
 
 	var theRelationshipMap = make(H)
 	var nullFields = make(map[string][]interface{})
@@ -166,7 +165,7 @@ func (qA *QueryApplier) getIndexOfWantedModelFromRelationshipTargets(fieldNameOf
 }
 
 func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) error {
-	reflectModel := reflect.ValueOf(qA.Model).Elem()
+	reflectModel := reflect.ValueOf(qA.EffectiveModel).Elem()
 	var theRelationshipMap = make(H)
 	var nullFields = make(H)
 
@@ -192,7 +191,7 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 		case 3:
 			sliceIndex := qA.getIndexOfWantedModelFromRelationshipTargets(splitDot[0], splitDot[1])
 			if sliceIndex == -1 {
-				panic("the target Model doesn't exist")
+				panic("the target model doesn't exist")
 			}
 
 			relationshipName := fmt.Sprintf("%v_%v", splitDot[0], sliceIndex)
@@ -230,19 +229,13 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 func (qA *QueryApplier) hydrate(scan func(dest ...interface{}) error) error {
 	var err error
 
-	if qA.alreadyHydrate {
-		return errors.New("the Model is already hydrate")
-	}
+	qA.EffectiveModel = newModel(qA.model)
 
 	switch {
 	case len(qA.columns) == 0 && len(qA.aggregates) == 0:
 		err = qA.fullHydrate(scan)
 	default:
 		err = qA.partialHydrate(scan)
-	}
-
-	if err == nil {
-		qA.alreadyHydrate = true
 	}
 
 	return err
@@ -276,6 +269,9 @@ func (qA *QueryApplier) addRelationship(fieldName string, relationship interface
 
 func (qA *QueryApplier) Clean() {
 	qA.relationshipTargets = make(map[string][]interface{})
+	qA.orderConsideration = make([]string, 0)
 	qA.columns = make([]string, 0)
+	qA.EffectiveModel = nil
+	qA.EffectiveAggregates = make([]*aggregate, 0)
 	qA.aggregates = make(H)
 }
