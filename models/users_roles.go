@@ -15,7 +15,7 @@ func (usersRoles *UsersRole) PutRelationshipConfig() {
 	usersRoles.Role = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "RolesIdRole"}
 }
 
-func NewUsersRole() orm.Model {
+func NewUsersRole() *UsersRole {
 	usersRoles := UsersRole{}
 	return &usersRoles
 }

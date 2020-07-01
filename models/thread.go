@@ -23,7 +23,7 @@ func (thread *Thread) PutRelationshipConfig() {
 	thread.Messages = &orm.OneToManyRelationShip{Target: &Message{}, FieldMTO: "Thread"}
 }
 
-func NewThread() interface{} {
+func NewThread() *Thread {
 	thread := Thread{}
 	return &thread
 }

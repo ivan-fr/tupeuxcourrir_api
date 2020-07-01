@@ -12,7 +12,7 @@ func (role *Role) PutRelationshipConfig() {
 	role.Users = &orm.ManyToManyRelationShip{Target: &User{}, IntermediateTarget: &UsersRole{}}
 }
 
-func NewRole() interface{} {
+func NewRole() *Role {
 	role := Role{}
 	return &role
 }

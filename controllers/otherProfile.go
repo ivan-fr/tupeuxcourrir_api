@@ -53,7 +53,7 @@ func MakeThreadWithOtherProfile(ctx echo.Context) error {
 
 	targetUser := sQB.EffectiveModel.(*models.User)
 
-	aNewThread := models.NewThread().(*models.Thread)
+	aNewThread := models.NewThread()
 	aNewThread.InitiatorThreadIdUser = user.IdUser
 	aNewThread.ReceiverThreadIdUser = targetUser.IdUser
 

@@ -31,7 +31,7 @@ func (user *User) PutRelationshipConfig() {
 	user.ReceivedThreads = &orm.OneToManyRelationShip{Target: &Thread{}, FieldMTO: "ReceiverThread"}
 }
 
-func NewUser() orm.Model {
+func NewUser() *User {
 	user := User{}
 	return &user
 }

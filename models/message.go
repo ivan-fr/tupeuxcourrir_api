@@ -21,7 +21,7 @@ func (message *Message) PutRelationshipConfig() {
 	message.Thread = &orm.ManyToOneRelationShip{Target: &Role{}, AssociateColumn: "ThreadIdThread"}
 }
 
-func NewMessage() interface{} {
+func NewMessage() *Message {
 	message := Message{}
 	return &message
 }
