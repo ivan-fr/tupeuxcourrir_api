@@ -161,15 +161,15 @@ func getComparativeFormat(comparative string) string {
 func getNullFieldInstance(field interface{}) interface{} {
 	switch field.(type) {
 	case string:
-		return sql.NullString{}
+		return &sql.NullString{}
 	case bool:
-		return sql.NullBool{}
+		return &sql.NullBool{}
 	case int:
-		return sql.NullInt64{}
+		return &sql.NullInt64{}
 	case float64:
-		return sql.NullFloat64{}
+		return &sql.NullFloat64{}
 	case time.Time:
-		return sql.NullTime{}
+		return &sql.NullTime{}
 	default:
 		return nil
 	}
@@ -178,20 +178,20 @@ func getNullFieldInstance(field interface{}) interface{} {
 func isAValidNullField(nullField interface{}) bool {
 	var nullFieldIsValid bool
 	switch nullField.(type) {
-	case sql.NullString:
-		sN := nullField.(sql.NullString)
+	case *sql.NullString:
+		sN := nullField.(*sql.NullString)
 		nullFieldIsValid = sN.Valid
-	case sql.NullBool:
-		sN := nullField.(sql.NullBool)
+	case *sql.NullBool:
+		sN := nullField.(*sql.NullBool)
 		nullFieldIsValid = sN.Valid
-	case sql.NullInt64:
-		sN := nullField.(sql.NullInt64)
+	case *sql.NullInt64:
+		sN := nullField.(*sql.NullInt64)
 		nullFieldIsValid = sN.Valid
-	case sql.NullFloat64:
-		sN := nullField.(sql.NullFloat64)
+	case *sql.NullFloat64:
+		sN := nullField.(*sql.NullFloat64)
 		nullFieldIsValid = sN.Valid
-	case sql.NullTime:
-		sN := nullField.(sql.NullTime)
+	case *sql.NullTime:
+		sN := nullField.(*sql.NullTime)
 		nullFieldIsValid = sN.Valid
 	}
 
@@ -200,20 +200,20 @@ func isAValidNullField(nullField interface{}) bool {
 
 func setNullFieldToAField(nullField interface{}, field reflect.Value) {
 	switch nullField.(type) {
-	case sql.NullString:
-		sN := nullField.(sql.NullString)
+	case *sql.NullString:
+		sN := nullField.(*sql.NullString)
 		field.SetString(sN.String)
-	case sql.NullBool:
-		sN := nullField.(sql.NullBool)
+	case *sql.NullBool:
+		sN := nullField.(*sql.NullBool)
 		field.SetBool(sN.Bool)
-	case sql.NullFloat64:
-		sN := nullField.(sql.NullFloat64)
+	case *sql.NullFloat64:
+		sN := nullField.(*sql.NullFloat64)
 		field.SetFloat(sN.Float64)
-	case sql.NullInt64:
-		sN := nullField.(sql.NullInt64)
+	case *sql.NullInt64:
+		sN := nullField.(*sql.NullInt64)
 		field.SetInt(sN.Int64)
-	case sql.NullTime:
-		sN := nullField.(sql.NullTime)
+	case *sql.NullTime:
+		sN := nullField.(*sql.NullTime)
 		field.Set(reflect.ValueOf(sN.Time))
 	}
 }

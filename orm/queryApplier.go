@@ -2,6 +2,7 @@ package orm
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -75,6 +76,7 @@ func (qA *QueryApplier) mergeRelationshipModelsFromNullFields(theMap H, nullFiel
 
 				switch {
 				case !nullFieldIsValid:
+					log.Println(fmt.Sprintf("%v_%v", fieldName, j))
 					theMap[fmt.Sprintf("%v_%v", fieldName, j)] = nil
 				case nullFieldIsValid:
 					setNullFieldToAField(currentNullFields[k], valueOfRelationshipModel.Field(k))
@@ -130,15 +132,15 @@ func (qA *QueryApplier) fullHydrate(scan func(dest ...interface{}) error) error 
 
 			var addressNullFields []interface{}
 
-			for k, nullField := range nullFields[fmt.Sprintf("%v_%v", fieldName, j)] {
-				if nullField == nil {
+			for k, ptrNullField := range nullFields[fmt.Sprintf("%v_%v", fieldName, j)] {
+				if ptrNullField == nil {
 					theField := reflect.ValueOf(theRelationshipMap[fmt.Sprintf("%v_%v", fieldName, j)]).Elem().Field(k)
 					if !isRelationshipField(theField) {
 						addr := theField.Addr().Interface()
 						addressNullFields = append(addressNullFields, addr)
 					}
 				} else {
-					addressNullFields = append(addressNullFields, &nullField)
+					addressNullFields = append(addressNullFields, ptrNullField)
 				}
 			}
 
@@ -189,7 +191,7 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 			if nullField := getNullFieldInstance(theField.Interface()); nullField == nil {
 				addrFields = append(addrFields, theField.Addr().Interface())
 			} else {
-				nullFields[column] = &nullField
+				nullFields[column] = nullField
 				addrFields = append(addrFields, nullFields[column])
 			}
 		case 3:
@@ -207,7 +209,7 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 			if nullField := getNullFieldInstance(theField.Interface()); nullField == nil {
 				addrFields = append(addrFields, theField.Addr().Interface())
 			} else {
-				nullFields[column] = &nullField
+				nullFields[column] = nullField
 				addrFields = append(addrFields, nullFields[column])
 			}
 		}
