@@ -8,7 +8,7 @@ import (
 )
 
 func GetUri(ctx echo.Context) error {
-	params := strings.Split(ctx.QueryParam("params"), ":")
+	params := strings.Split(ctx.QueryParam("params"), ",")
 	paramsInterface := make([]interface{}, len(params))
 
 	for i, v := range params {
