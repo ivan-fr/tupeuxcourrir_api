@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"tupeuxcourrir_api/config"
-	TCPMiddleware "tupeuxcourrir_api/middleware"
+	TPCMiddleware "tupeuxcourrir_api/middleware"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 
@@ -14,7 +14,7 @@ import (
 
 func CheckMail(ctx echo.Context) error {
 	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
-	claims := JWTContext.Claims.(*TCPMiddleware.JwtCustomClaims)
+	claims := JWTContext.Claims.(*TPCMiddleware.JwtCustomClaims)
 
 	if claims.Subject != config.JwtCheckEmailSubject {
 		return errors.New("wrong jwt subject")

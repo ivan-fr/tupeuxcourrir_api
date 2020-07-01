@@ -13,7 +13,7 @@ import (
 	"time"
 	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/forms"
-	TCPMiddleware "tupeuxcourrir_api/middleware"
+	TPCMiddleware "tupeuxcourrir_api/middleware"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 	"tupeuxcourrir_api/utils"
@@ -21,6 +21,11 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 )
+
+func GetProfile(ctx echo.Context) error {
+	user := ctx.Get("user").(*models.User)
+	return ctx.JSON(http.StatusOK, user)
+}
 
 func GetThreads(ctx echo.Context) error {
 	uSQB := ctx.Get("uSQB").(*orm.SelectQueryBuilder)
@@ -158,7 +163,7 @@ func SendForValidateMail(ctx echo.Context) error {
 	if execute {
 		expirationTime := time.Now().Add(15 * time.Minute)
 
-		newClaims := &TCPMiddleware.JwtCustomClaims{
+		newClaims := &TPCMiddleware.JwtCustomClaims{
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
