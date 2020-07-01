@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"tupeuxcourrir_api/db"
 	"tupeuxcourrir_api/routes"
 
@@ -31,10 +32,16 @@ func main() {
 		Format: "method=${method}, uri=${uri}, status=${status}, error=${error}\n",
 	}))
 
+	for _, r := range e.Routes() {
+		log.Println(r.Name)
+	}
+
 	e.Static("/static", "public")
 	routes.AuthRoutes(e.Group("/auth"))
 	routes.JWTCheckerRoutes(e.Group("/checker"))
 	routes.JWTProfileRoutes(e.Group("/profile"))
+	routes.OtherProfileRoutes(e.Group("/profiles"))
+	routes.SystemRoutes(e.Group("/system"))
 
 	registeredRoutes, _ := json.MarshalIndent(e.Routes(), "", "  ")
 	_ = ioutil.WriteFile("routes.json", registeredRoutes, 0644)

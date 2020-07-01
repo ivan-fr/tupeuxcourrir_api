@@ -37,8 +37,16 @@ func JsonErrorPattern(err error) map[string]interface{} {
 	}
 
 	if sliceStr == nil {
-		return map[string]interface{}{"message": err.Error()}
+		return commonFormat(err.Error())
 	}
 
-	return map[string]interface{}{"message": sliceStr}
+	return commonFormat(sliceStr)
+}
+
+func JsonOkPattern(value interface{}) map[string]interface{} {
+	return commonFormat(value)
+}
+
+func commonFormat(message interface{}) map[string]interface{} {
+	return map[string]interface{}{"message": message}
 }

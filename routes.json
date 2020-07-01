@@ -1,33 +1,18 @@
 [
   {
     "method": "POST",
-    "path": "/auth/login",
-    "name": "tupeuxcourrir_api/controllers.Login"
-  },
-  {
-    "method": "POST",
     "path": "/auth/jwt/editPassword",
     "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
   },
   {
-    "method": "POST",
-    "path": "/checker/checkMail",
-    "name": "tupeuxcourrir_api/controllers.CheckMail"
-  },
-  {
-    "method": "PUT",
-    "path": "/profile/putPhoto",
-    "name": "tupeuxcourrir_api/controllers.PutPhoto"
-  },
-  {
-    "method": "PUT",
-    "path": "/profile/putAddress",
-    "name": "tupeuxcourrir_api/controllers.PutAddress"
+    "method": "GET",
+    "path": "/profile/",
+    "name": "tupeuxcourrir_api/controllers.GetProfile"
   },
   {
     "method": "GET",
-    "path": "/profile/threads",
-    "name": "tupeuxcourrir_api/controllers.GetThreads"
+    "path": "/profiles/:id",
+    "name": "tupeuxcourrir_api/controllers.GetOtherProfile"
   },
   {
     "method": "GET",
@@ -41,6 +26,41 @@
   },
   {
     "method": "POST",
+    "path": "/profiles/:id/makeThread",
+    "name": "tupeuxcourrir_api/controllers.MakeThreadWithOtherProfile"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/login",
+    "name": "tupeuxcourrir_api/controllers.Login"
+  },
+  {
+    "method": "POST",
+    "path": "/profile/sendForValidateMail",
+    "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
+  },
+  {
+    "method": "PUT",
+    "path": "/profile/putPhoto",
+    "name": "tupeuxcourrir_api/controllers.PutPhoto"
+  },
+  {
+    "method": "PUT",
+    "path": "/profile/putAddress",
+    "name": "tupeuxcourrir_api/controllers.PutAddress"
+  },
+  {
+    "method": "POST",
+    "path": "/checker/checkMail",
+    "name": "tupeuxcourrir_api/controllers.CheckMail"
+  },
+  {
+    "method": "GET",
+    "path": "/profile/threads",
+    "name": "tupeuxcourrir_api/controllers.GetThreads"
+  },
+  {
+    "method": "POST",
     "path": "/auth/forgotPassword",
     "name": "tupeuxcourrir_api/controllers.ForgotPassword"
   },
@@ -48,10 +68,5 @@
     "method": "POST",
     "path": "/auth/editPassword",
     "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
-  },
-  {
-    "method": "POST",
-    "path": "/profile/sendForValidateMail",
-    "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
   }
 ]
