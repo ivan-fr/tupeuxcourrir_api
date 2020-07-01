@@ -1,33 +1,18 @@
 [
   {
     "method": "POST",
+    "path": "/auth/signUp",
+    "name": "tupeuxcourrir_api/controllers.SignUp"
+  },
+  {
+    "method": "POST",
     "path": "/auth/forgotPassword",
     "name": "tupeuxcourrir_api/controllers.ForgotPassword"
   },
   {
     "method": "POST",
-    "path": "/auth/jwt/editPassword",
-    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
-  },
-  {
-    "method": "GET",
-    "path": "/static/*",
-    "name": "github.com/labstack/echo/v4.common.static.func1"
-  },
-  {
-    "method": "GET",
-    "path": "/profile",
-    "name": "tupeuxcourrir_api/controllers.GetProfile"
-  },
-  {
-    "method": "GET",
-    "path": "/profiles/:id",
-    "name": "tupeuxcourrir_api/controllers.GetOtherProfile"
-  },
-  {
-    "method": "POST",
-    "path": "/auth/login",
-    "name": "tupeuxcourrir_api/controllers.Login"
+    "path": "/profiles/:id/makeThread",
+    "name": "tupeuxcourrir_api/controllers.MakeThreadWithOtherProfile"
   },
   {
     "method": "POST",
@@ -40,9 +25,14 @@
     "name": "tupeuxcourrir_api/controllers.CheckMail"
   },
   {
-    "method": "POST",
-    "path": "/profile/sendForValidateMail",
-    "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
+    "method": "PUT",
+    "path": "/profile/putPhoto",
+    "name": "tupeuxcourrir_api/controllers.PutPhoto"
+  },
+  {
+    "method": "GET",
+    "path": "/profile",
+    "name": "tupeuxcourrir_api/controllers.GetProfile"
   },
   {
     "method": "PUT",
@@ -50,19 +40,29 @@
     "name": "tupeuxcourrir_api/controllers.PutAddress"
   },
   {
-    "method": "POST",
-    "path": "/profiles/:id/makeThread",
-    "name": "tupeuxcourrir_api/controllers.MakeThreadWithOtherProfile"
+    "method": "GET",
+    "path": "/profiles/:id",
+    "name": "tupeuxcourrir_api/controllers.GetOtherProfile"
   },
   {
     "method": "GET",
-    "path": "/system/uri/:routeName",
-    "name": "tupeuxcourrir_api/controllers.GetUri"
+    "path": "/static/*",
+    "name": "github.com/labstack/echo/v4.common.static.func1"
   },
   {
     "method": "POST",
-    "path": "/auth/signUp",
-    "name": "tupeuxcourrir_api/controllers.SignUp"
+    "path": "/auth/login",
+    "name": "tupeuxcourrir_api/controllers.Login"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/jwt/editPassword",
+    "name": "tupeuxcourrir_api/controllers.EditPasswordFromLink"
+  },
+  {
+    "method": "POST",
+    "path": "/profile/sendForValidateMail",
+    "name": "tupeuxcourrir_api/controllers.SendForValidateMail"
   },
   {
     "method": "GET",
@@ -70,8 +70,8 @@
     "name": "tupeuxcourrir_api/controllers.GetThreads"
   },
   {
-    "method": "PUT",
-    "path": "/profile/putPhoto",
-    "name": "tupeuxcourrir_api/controllers.PutPhoto"
+    "method": "GET",
+    "path": "/system/uri/:routeName",
+    "name": "tupeuxcourrir_api/controllers.GetUri"
   }
 ]

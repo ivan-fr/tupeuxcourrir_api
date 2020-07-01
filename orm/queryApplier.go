@@ -2,7 +2,6 @@ package orm
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 )
@@ -76,7 +75,6 @@ func (qA *QueryApplier) mergeRelationshipModelsFromNullFields(theMap H, nullFiel
 
 				switch {
 				case !nullFieldIsValid:
-					log.Println(fmt.Sprintf("%v_%v", fieldName, j))
 					theMap[fmt.Sprintf("%v_%v", fieldName, j)] = nil
 				case nullFieldIsValid:
 					setNullFieldToAField(currentNullFields[k], valueOfRelationshipModel.Field(k))
