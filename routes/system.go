@@ -6,5 +6,5 @@ import (
 )
 
 func SystemRoutes(group *echo.Group) {
-	group.GET("/uri/:routeName", controllers.GetUri)
+	group.GET("/uri", controllers.GetUri)
 }
