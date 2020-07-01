@@ -188,10 +188,10 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 			}
 
 			theField := reflect.ValueOf(theRelationshipMap[fmt.Sprintf("%v_%v", splitDot[0], 0)]).Elem().FieldByName(splitDot[1])
-			if nullField := getNullFieldInstance(theField.Interface()); nullField == nil {
+			if ptrNullField := getNullFieldInstance(theField.Interface()); ptrNullField == nil {
 				addrFields = append(addrFields, theField.Addr().Interface())
 			} else {
-				nullFields[column] = nullField
+				nullFields[column] = ptrNullField
 				addrFields = append(addrFields, nullFields[column])
 			}
 		case 3:
@@ -206,10 +206,10 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 			}
 
 			theField := reflect.ValueOf(theRelationshipMap[relationshipName]).Elem().FieldByName(splitDot[1])
-			if nullField := getNullFieldInstance(theField.Interface()); nullField == nil {
+			if ptrNullField := getNullFieldInstance(theField.Interface()); ptrNullField == nil {
 				addrFields = append(addrFields, theField.Addr().Interface())
 			} else {
-				nullFields[column] = nullField
+				nullFields[column] = ptrNullField
 				addrFields = append(addrFields, nullFields[column])
 			}
 		}
