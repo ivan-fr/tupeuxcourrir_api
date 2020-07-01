@@ -178,19 +178,19 @@ func getNullFieldInstance(field interface{}) interface{} {
 func isAValidNullField(nullField interface{}) bool {
 	var nullFieldIsValid bool
 	switch nullField.(type) {
-	case string:
+	case sql.NullString:
 		sN := nullField.(sql.NullString)
 		nullFieldIsValid = sN.Valid
-	case bool:
+	case sql.NullBool:
 		sN := nullField.(sql.NullBool)
 		nullFieldIsValid = sN.Valid
-	case int:
+	case sql.NullInt64:
 		sN := nullField.(sql.NullInt64)
 		nullFieldIsValid = sN.Valid
-	case float64:
+	case sql.NullFloat64:
 		sN := nullField.(sql.NullFloat64)
 		nullFieldIsValid = sN.Valid
-	case time.Time:
+	case sql.NullTime:
 		sN := nullField.(sql.NullTime)
 		nullFieldIsValid = sN.Valid
 	}
@@ -200,19 +200,19 @@ func isAValidNullField(nullField interface{}) bool {
 
 func setNullFieldToAField(nullField interface{}, field reflect.Value) {
 	switch nullField.(type) {
-	case string:
+	case sql.NullString:
 		sN := nullField.(sql.NullString)
 		field.SetString(sN.String)
-	case bool:
+	case sql.NullBool:
 		sN := nullField.(sql.NullBool)
 		field.SetBool(sN.Bool)
-	case float64:
+	case sql.NullFloat64:
 		sN := nullField.(sql.NullFloat64)
 		field.SetFloat(sN.Float64)
-	case int:
+	case sql.NullInt64:
 		sN := nullField.(sql.NullInt64)
 		field.SetInt(sN.Int64)
-	case time.Time:
+	case sql.NullTime:
 		sN := nullField.(sql.NullTime)
 		field.Set(reflect.ValueOf(sN.Time))
 	}

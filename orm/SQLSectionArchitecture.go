@@ -118,9 +118,9 @@ func (sSA *sQLSectionArchitecture) analyseMapStringInterfaceContext() {
 
 func (sSA *sQLSectionArchitecture) analyseIncrementMode(columnName string, value interface{}, formats []string) {
 	switch value.(type) {
-	case int:
+	case int, int64, int32:
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, columnName, "?")
-		sSA.addStmt(value.(int))
+		sSA.addStmt(value)
 	default:
 		panic("undefined value type")
 	}
@@ -137,9 +137,9 @@ func (sSA *sQLSectionArchitecture) analyseSetterMode(columnName string, value in
 			sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, "?")
 			sSA.addStmt(value.(string))
 		}
-	case int:
+	case int, int64, int32:
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, "?")
-		sSA.addStmt(value.(int))
+		sSA.addStmt(value)
 	case bool:
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, columnName, "?")
 		sSA.addStmt(value.(bool))
@@ -184,9 +184,9 @@ func (sSA *sQLSectionArchitecture) analyseAggregateMode(aggregateFunction string
 			vToCompare := valueOfValue.Index(1).Interface()
 			checkSlice := false
 			switch vToCompare.(type) {
-			case int:
+			case int, int64, int32:
 				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
-				sSA.addStmt(vToCompare.(int))
+				sSA.addStmt(vToCompare)
 			case nil:
 				if comparative == "=" {
 					formats[1] = strings.Replace(formats[1], "=", "IS", 1)
@@ -252,9 +252,9 @@ func (sSA *sQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) 
 		}
 	case nil:
 		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "NULL")
-	case int:
+	case int, int64, int32:
 		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "?")
-		sSA.addStmt(value.(int))
+		sSA.addStmt(value)
 	case bool:
 		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "?")
 		sSA.addStmt(value.(bool))
@@ -262,7 +262,7 @@ func (sSA *sQLSectionArchitecture) analyseSpaceModeFromSlice(value interface{}) 
 		sSA.SQLSection = fmt.Sprintf(sSA.formats[1], sSA.SQLSection, "?")
 		sSA.addStmt(value.(time.Time))
 	default:
-		panic("undefined type from space")
+		panic(fmt.Sprintf("undefined type from space: %t", value))
 	}
 }
 

@@ -64,9 +64,9 @@ func (qA *QueryApplier) mergeRelationshipModelsFromNullFields(theMap H, nullFiel
 	for _, fieldName := range qA.orderConsideration {
 		for j := range qA.relationshipTargets[fieldName] {
 			currentNullFields := nullFields[fmt.Sprintf("%v_%v", fieldName, j)]
-			valueOf := reflect.ValueOf(theMap[fmt.Sprintf("%v_%v", fieldName, j)]).Elem()
+			valueOfRelationshipModel := reflect.ValueOf(theMap[fmt.Sprintf("%v_%v", fieldName, j)]).Elem()
 
-			for k := 0; k < valueOf.NumField(); k++ {
+			for k := 0; k < valueOfRelationshipModel.NumField(); k++ {
 				if currentNullFields[k] == nil {
 					continue
 				}
@@ -77,7 +77,7 @@ func (qA *QueryApplier) mergeRelationshipModelsFromNullFields(theMap H, nullFiel
 				case !nullFieldIsValid:
 					theMap[fmt.Sprintf("%v_%v", fieldName, j)] = nil
 				case nullFieldIsValid:
-					setNullFieldToAField(currentNullFields[k], valueOf.Field(k))
+					setNullFieldToAField(currentNullFields[k], valueOfRelationshipModel.Field(k))
 				}
 			}
 		}
@@ -92,16 +92,20 @@ func (qA *QueryApplier) hydrateRelationshipsInModel(theMap H) {
 		switch concernField.(type) {
 		case *ManyToManyRelationShip:
 			relation := concernField.(*ManyToManyRelationShip)
-			if relation.EffectiveIntermediateTarget != nil {
+			if relation.EffectiveIntermediateTarget != nil && theMap[fmt.Sprintf("%v_%v", fieldName, 0)] != nil {
 				relation.EffectiveIntermediateTarget = theMap[fmt.Sprintf("%v_%v", fieldName, 0)]
 			}
-			relation.EffectiveTargets = append(relation.EffectiveTargets, theMap[fmt.Sprintf("%v_%v", fieldName, 1)])
+			if theMap[fmt.Sprintf("%v_%v", fieldName, 1)] != nil {
+				relation.EffectiveTargets = append(relation.EffectiveTargets, theMap[fmt.Sprintf("%v_%v", fieldName, 1)])
+			}
 		case *OneToManyRelationShip:
 			relation := concernField.(*OneToManyRelationShip)
-			relation.EffectiveTargets = append(relation.EffectiveTargets, theMap[fmt.Sprintf("%v_%v", fieldName, 0)])
+			if theMap[fmt.Sprintf("%v_%v", fieldName, 0)] != nil {
+				relation.EffectiveTargets = append(relation.EffectiveTargets, theMap[fmt.Sprintf("%v_%v", fieldName, 0)])
+			}
 		case *ManyToOneRelationShip:
 			relation := concernField.(*ManyToOneRelationShip)
-			if relation.EffectiveTarget != nil {
+			if relation.EffectiveTarget != nil && theMap[fmt.Sprintf("%v_%v", fieldName, 0)] != nil {
 				relation.EffectiveTarget = theMap[fmt.Sprintf("%v_%v", fieldName, 0)]
 			}
 		}
@@ -144,7 +148,7 @@ func (qA *QueryApplier) fullHydrate(scan func(dest ...interface{}) error) error 
 
 	err = scan(addrFields...)
 
-	if err != nil && len(nullFields) > 0 {
+	if err == nil && len(nullFields) > 0 {
 		qA.mergeRelationshipModelsFromNullFields(theRelationshipMap, nullFields)
 		qA.hydrateRelationshipsInModel(theRelationshipMap)
 	}
@@ -218,7 +222,7 @@ func (qA *QueryApplier) partialHydrate(scan func(dest ...interface{}) error) err
 
 	err := scan(addrFields...)
 
-	if err != nil && len(nullFields) > 0 {
+	if err == nil && len(nullFields) > 0 {
 		qA.mergePartialRelationshipModelsFromNullFields(theRelationshipMap, nullFields)
 		qA.hydrateRelationshipsInModel(theRelationshipMap)
 	}

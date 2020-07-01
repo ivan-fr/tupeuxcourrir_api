@@ -294,10 +294,6 @@ func (sQB *SelectQueryBuilder) Having(logical *Logical) *SelectQueryBuilder {
 }
 
 func (sQB *SelectQueryBuilder) ApplyQuery() error {
-	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
-		panic("configuration not supported")
-	}
-
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
@@ -317,10 +313,6 @@ func (sQB *SelectQueryBuilder) ApplyQuery() error {
 }
 
 func (sQB *SelectQueryBuilder) ApplyQueryRow() error {
-	if sQB.SectionSelect != "" || sQB.SectionAggregate != "" {
-		panic("configuration not supported")
-	}
-
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
