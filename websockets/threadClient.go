@@ -86,6 +86,7 @@ func (c *ThreadClient) WritePump() {
 		ticker.Stop()
 		_ = c.Conn.Close()
 	}()
+
 	for {
 		select {
 		case message, ok := <-c.Send:

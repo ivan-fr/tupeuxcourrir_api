@@ -48,13 +48,14 @@ func WsThread(ctx echo.Context) error {
 	threadHub := websockets.GetThreadHub(targetThread)
 	client := &websockets.ThreadClient{ThreadHub: threadHub, Conn: connexion}
 	client.ThreadHub.Register <- client
+	err = client.Conn.WriteJSON(targetThread)
+
+	if err != nil {
+		return err
+	}
 
 	go client.WritePump()
 	go client.ReadPump()
-
-	defer func() {
-		_ = connexion.Close()
-	}()
 
 	return err
 }
