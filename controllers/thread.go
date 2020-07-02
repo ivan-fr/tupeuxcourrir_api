@@ -55,6 +55,10 @@ func WsThread(ctx echo.Context) error {
 	sQB.Aggregate(orm.H{"COUNT": "Messages.IdMessage"})
 	err = sQB.ApplyQuery()
 
+	if err != nil {
+		return err
+	}
+
 	targetThread = sQB.EffectiveModel.(*models.Thread)
 
 	threadHub := websockets.GetThreadHub(targetThread)
