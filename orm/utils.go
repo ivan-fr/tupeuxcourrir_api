@@ -217,3 +217,21 @@ func setNullFieldToAField(nullField interface{}, field reflect.Value) {
 		field.Set(reflect.ValueOf(sN.Time))
 	}
 }
+
+func getFieldNamesToScanFromModel(model interface{}) []string {
+	valueOfModel := reflect.ValueOf(model)
+
+	if valueOfModel.Kind() == reflect.Ptr {
+		valueOfModel = valueOfModel.Elem()
+	}
+
+	var fields []string
+
+	for i := 0; i < valueOfModel.NumField(); i++ {
+		if !isRelationshipField(valueOfModel.Field(i)) {
+			fields = append(fields, valueOfModel.Type().Field(i).Name)
+		}
+	}
+
+	return fields
+}

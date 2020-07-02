@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 	"tupeuxcourrir_api/db"
 )
 
@@ -253,13 +254,47 @@ func (sQB *SelectQueryBuilder) GroupBy(columns []string) *SelectQueryBuilder {
 func (sQB *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
 	sQB.columns = make([]string, 0)
 
-	for _, val := range columns {
-		sQB.columns = append(sQB.columns, val)
+	var effectiveColumns []string
+
+	for _, column := range columns {
+		splitDot := strings.Split(column, ".")
+
+		switch len(splitDot) {
+		case 1:
+			if splitDot[len(splitDot)] == "*" {
+				effectiveColumns = append(effectiveColumns, getFieldNamesToScanFromModel(sQB.model)...)
+			} else {
+				effectiveColumns = append(effectiveColumns, column)
+			}
+		case 2:
+			if splitDot[len(splitDot)] == "*" {
+				for _, askedColumn := range getFieldNamesToScanFromModel(sQB.relationshipTargets[splitDot[0]][0]) {
+					effectiveColumns = append(effectiveColumns, fmt.Sprintf("%v.%v", splitDot[0], askedColumn))
+				}
+			} else {
+				effectiveColumns = append(effectiveColumns, column)
+			}
+		case 3:
+			if splitDot[len(splitDot)] == "*" {
+				sliceIndex := sQB.getIndexOfWantedModelFromRelationshipTargets(splitDot[0], splitDot[1])
+				for _, askedColumn := range getFieldNamesToScanFromModel(sQB.relationshipTargets[splitDot[0]][sliceIndex]) {
+					effectiveColumns = append(effectiveColumns, fmt.Sprintf("%v.%v.%v", splitDot[0], splitDot[1], askedColumn))
+				}
+			} else {
+				effectiveColumns = append(effectiveColumns, column)
+			}
+		default:
+			panic("undefined configuration")
+		}
 	}
 
-	sQB.aliasFactory.adaptContext(columns, false)
+	for _, column := range effectiveColumns {
+		sQB.columns = append(sQB.columns, column)
+	}
 
-	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: columns}
+	sQB.aliasFactory.adaptContext(effectiveColumns, false)
+
+	sSA := &sQLSectionArchitecture{intermediateString: ",", isStmts: false, mode: "space", context: effectiveColumns}
 	sSA.constructSQlSection()
 	sQB.SectionSelect = fmt.Sprintf("SELECT %v", sSA.SQLSection)
 
