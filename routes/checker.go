@@ -10,8 +10,8 @@ import (
 )
 
 func JWTCheckerRoutes(group *echo.Group) {
-	JWTconfig := TPCMiddleware.JWTConfig
-	JWTconfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtCheckEmailSubject)
+	JwtConfig := TPCMiddleware.JWTConfig
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtCheckEmailSubject)
 
-	group.POST("/checkMail", controllers.CheckMail, middleware.JWTWithConfig(JWTconfig))
+	group.POST("/checkMail", controllers.CheckMail, middleware.JWTWithConfig(JwtConfig))
 }
