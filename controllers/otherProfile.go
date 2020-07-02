@@ -18,7 +18,7 @@ func GetOtherProfile(ctx echo.Context) error {
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
-		Select([]string{"CreatedAt", "Pseudo", "PhotoPath"}).
+		Select([]string{"CreatedAt", "Pseudo", "PhotoPath", "IdUser"}).
 		Where(orm.And(orm.H{"IdUser": idTarget}))
 	err = sQB.ApplyQueryRow()
 

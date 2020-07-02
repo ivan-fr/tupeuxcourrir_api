@@ -48,6 +48,7 @@ func WsThread(ctx echo.Context) error {
 			"ReceiverThread.PhotoPath"})
 	} else {
 		sQB.Select([]string{"*", "ReceiverThread.*", "Messages.*",
+			"InitiatorThread.IdUser",
 			"InitiatorThread.CreatedAt", "InitiatorThread.Pseudo",
 			"InitiatorThread.PhotoPath"})
 	}
