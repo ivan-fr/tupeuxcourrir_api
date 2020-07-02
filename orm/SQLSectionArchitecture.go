@@ -177,47 +177,48 @@ func (sSA *sQLSectionArchitecture) analyseSetterMode(columnName string, value in
 func (sSA *sQLSectionArchitecture) analyseAggregateMode(aggregateFunction string, value interface{}, comparative string, formats []string) {
 	if _, ok := value.(string); ok {
 		sSA.SQLSection = fmt.Sprintf(formats[0], sSA.SQLSection, aggregateFunction, value.(string))
-	} else {
-		valueOfValue := reflect.ValueOf(value)
-		if valueOfValue.Type().Kind() == reflect.Slice && valueOfValue.Len() == 2 {
-			columnName := valueOfValue.Index(0).Interface().(string)
-			vToCompare := valueOfValue.Index(1).Interface()
-			checkSlice := false
-			switch vToCompare.(type) {
-			case int, int64, int32:
-				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
-				sSA.addStmt(vToCompare)
-			case nil:
-				if comparative == "=" {
-					formats[1] = strings.Replace(formats[1], "=", "IS", 1)
-				}
-				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "NULL")
-			case string:
-				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
-				sSA.addStmt(vToCompare.(string))
-			case time.Time:
-				sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
-				sSA.addStmt(value.(time.Time))
-			default:
-				checkSlice = true
+		return
+	}
+
+	valueOfValue := reflect.ValueOf(value)
+	if valueOfValue.Type().Kind() == reflect.Slice && valueOfValue.Len() == 2 {
+		columnName := valueOfValue.Index(0).Interface().(string)
+		vToCompare := valueOfValue.Index(1).Interface()
+		checkSlice := false
+		switch vToCompare.(type) {
+		case int, int64, int32:
+			sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
+			sSA.addStmt(vToCompare)
+		case nil:
+			if comparative == "=" {
+				formats[1] = strings.Replace(formats[1], "=", "IS", 1)
 			}
+			sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "NULL")
+		case string:
+			sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
+			sSA.addStmt(vToCompare.(string))
+		case time.Time:
+			sSA.SQLSection = fmt.Sprintf(formats[1], sSA.SQLSection, aggregateFunction, columnName, "?")
+			sSA.addStmt(value.(time.Time))
+		default:
+			checkSlice = true
+		}
 
-			if checkSlice {
-				if comparative == "IN" {
-					valueOfVToCompare := valueOfValue.Index(1).Interface()
-					if reflect.TypeOf(valueOfVToCompare).Kind() == reflect.Slice {
-						sSASub := &sQLSectionArchitecture{mode: "space",
-							isStmts:            true,
-							intermediateString: ",",
-							context:            valueOfVToCompare}
-						sSASub.constructSQlSection()
+		if checkSlice {
+			if comparative == "IN" {
+				valueOfVToCompare := valueOfValue.Index(1).Interface()
+				if reflect.TypeOf(valueOfVToCompare).Kind() == reflect.Slice {
+					sSASub := &sQLSectionArchitecture{mode: "space",
+						isStmts:            true,
+						intermediateString: ",",
+						context:            valueOfVToCompare}
+					sSASub.constructSQlSection()
 
-						sSA.SQLSection = fmt.Sprintf(formats[2], sSA.SQLSection, aggregateFunction, columnName, sSASub.SQLSection)
-						sSA.valuesFromStmts = append(sSA.valuesFromStmts, sSASub.valuesFromStmts...)
-					}
-				} else {
-					panic("undefined type")
+					sSA.SQLSection = fmt.Sprintf(formats[2], sSA.SQLSection, aggregateFunction, columnName, sSASub.SQLSection)
+					sSA.valuesFromStmts = append(sSA.valuesFromStmts, sSASub.valuesFromStmts...)
 				}
+			} else {
+				panic("undefined type")
 			}
 		}
 	}
