@@ -31,24 +31,38 @@ func WsThread(ctx echo.Context) error {
 		return ctx.JSON(http.StatusUnauthorized, echo.Map{})
 	}
 
-	sQB.Consider("Messages").
-		Consider("ReceiverThread").
-		Consider("InitiatorThread").
-		Where(orm.And(orm.H{"IdThread": targetThread.IdThread}))
-	err = sQB.ApplyQuery()
-
-	targetThread = sQB.EffectiveModel.(*models.Thread)
-
 	connexion, err := websockets.Upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
 
 	if err != nil {
 		return err
 	}
 
+	sQB.Consider("Messages").
+		Consider("ReceiverThread").
+		Consider("InitiatorThread").
+		Where(orm.And(orm.H{"IdThread": targetThread.IdThread}))
+
+	if user.IdUser == targetThread.InitiatorThreadIdUser {
+		sQB.Select([]string{"*", "InitiatorThread.*", "Messages.*",
+			"ReceiverThread.CreatedAt", "ReceiverThread.Pseudo",
+			"ReceiverThread.PhotoPath"})
+	} else {
+		sQB.Select([]string{"*", "ReceiverThread.*", "Messages.*",
+			"InitiatorThread.CreatedAt", "InitiatorThread.Pseudo",
+			"InitiatorThread.PhotoPath"})
+	}
+
+	sQB.Aggregate(orm.H{"COUNT": "Messages.IdMessage"})
+	err = sQB.ApplyQuery()
+
+	targetThread = sQB.EffectiveModel.(*models.Thread)
+
 	threadHub := websockets.GetThreadHub(targetThread)
 	client := &websockets.ThreadClient{ThreadHub: threadHub, Conn: connexion}
 	client.ThreadHub.Register <- client
-	err = client.Conn.WriteJSON(targetThread)
+
+	wsEnterSend := echo.Map{"thread": targetThread, "aggregates": sQB.EffectiveAggregates}
+	err = client.Conn.WriteJSON(wsEnterSend)
 
 	if err != nil {
 		return err
