@@ -6,7 +6,6 @@ package websockets
 
 import (
 	"log"
-	"net/http"
 	"time"
 	"tupeuxcourrir_api/models"
 
@@ -27,44 +26,44 @@ const (
 	maxMessageSize = 512
 )
 
-var upgrader = websocket.Upgrader{
+var Upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
-// ThreadClient is a middleman between the websocket connection and the threadHub.
+// ThreadClient is a middleman between the websocket connection and the ThreadHub.
 type ThreadClient struct {
-	threadHub *ThreadHub
+	ThreadHub *ThreadHub
 
 	// The websocket connection.
-	conn *websocket.Conn
+	Conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send chan *models.Message
+	Send chan *models.Message
 }
 
-// readPump pumps messages from the websocket connection to the threadHub.
+// ReadPump pumps messages from the websocket connection to the ThreadHub.
 //
-// The application runs readPump in a per-connection goroutine. The application
+// The application runs ReadPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *ThreadClient) readPump() {
+func (c *ThreadClient) ReadPump() {
 	defer func() {
-		c.threadHub.unregister <- c
-		_ = c.conn.Close()
+		c.ThreadHub.Unregister <- c
+		_ = c.Conn.Close()
 	}()
 
-	c.conn.SetReadLimit(maxMessageSize)
-	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error {
-		_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetReadLimit(maxMessageSize)
+	_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
 	for {
 		var message models.Message
 
-		err := c.conn.ReadJSON(&message)
+		err := c.Conn.ReadJSON(&message)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
@@ -72,57 +71,41 @@ func (c *ThreadClient) readPump() {
 			break
 		}
 
-		c.threadHub.broadcast <- &message
+		c.ThreadHub.Broadcast <- &message
 	}
 }
 
-// writePump pumps messages from the threadHub to the websocket connection.
+// WritePump pumps messages from the ThreadHub to the websocket connection.
 //
-// A goroutine running writePump is started for each connection. The
+// A goroutine running WritePump is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
-func (c *ThreadClient) writePump() {
+func (c *ThreadClient) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		_ = c.conn.Close()
+		_ = c.Conn.Close()
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		case message, ok := <-c.Send:
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// The threadHub closed the channel.
-				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				// The ThreadHub closed the channel.
+				_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
-			err := c.conn.WriteJSON(message)
+			err := c.Conn.WriteJSON(message)
 
 			if err != nil {
 				return
 			}
 		case <-ticker.C:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
 	}
-}
-
-// serveWs handles websocket requests from the peer.
-func serveWs(hub *ThreadHub, w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	client := &ThreadClient{threadHub: hub, conn: conn}
-	client.threadHub.register <- client
-
-	// Allow collection of memory referenced by the caller by doing all work in
-	// new goroutines.
-	go client.writePump()
-	go client.readPump()
 }

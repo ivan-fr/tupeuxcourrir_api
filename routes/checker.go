@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func JWTCheckerRoutes(group *echo.Group) {
+func CheckerRoutes(group *echo.Group) {
 	JwtConfig := TPCMiddleware.JWTConfig
 	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtCheckEmailSubject)
 

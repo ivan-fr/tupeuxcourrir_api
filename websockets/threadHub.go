@@ -8,22 +8,22 @@ import "tupeuxcourrir_api/models"
 
 var mapThreadHub = make(map[int]*ThreadHub)
 
-// ThreadHub maintains the set of active clients and broadcasts messages to the
-// clients.
+// ThreadHub maintains the set of active Clients and broadcasts messages to the
+// Clients.
 type ThreadHub struct {
 	threadID int
 
-	// Registered clients.
-	clients map[*ThreadClient]bool
+	// Registered Clients.
+	Clients map[*ThreadClient]bool
 
-	// Inbound messages from the clients.
-	broadcast chan *models.Message
+	// Inbound messages from the Clients.
+	Broadcast chan *models.Message
 
-	// Register requests from the clients.
-	register chan *ThreadClient
+	// Register requests from the Clients.
+	Register chan *ThreadClient
 
-	// Unregister requests from clients.
-	unregister chan *ThreadClient
+	// Unregister requests from Clients.
+	Unregister chan *ThreadClient
 }
 
 func GetThreadHub(thread *models.Thread) *ThreadHub {
@@ -32,10 +32,10 @@ func GetThreadHub(thread *models.Thread) *ThreadHub {
 	if !ok {
 		mapThreadHub[thread.IdThread] = &ThreadHub{
 			threadID:   thread.IdThread,
-			broadcast:  make(chan *models.Message),
-			register:   make(chan *ThreadClient),
-			unregister: make(chan *ThreadClient),
-			clients:    make(map[*ThreadClient]bool),
+			Broadcast:  make(chan *models.Message),
+			Register:   make(chan *ThreadClient),
+			Unregister: make(chan *ThreadClient),
+			Clients:    make(map[*ThreadClient]bool),
 		}
 
 		defer func() {
@@ -53,23 +53,23 @@ func (tH *ThreadHub) run() {
 
 	for {
 		select {
-		case client := <-tH.register:
-			tH.clients[client] = true
-		case client := <-tH.unregister:
-			if _, ok := tH.clients[client]; ok {
-				delete(tH.clients, client)
-				close(client.send)
-				if len(tH.clients) == 0 {
+		case client := <-tH.Register:
+			tH.Clients[client] = true
+		case client := <-tH.Unregister:
+			if _, ok := tH.Clients[client]; ok {
+				delete(tH.Clients, client)
+				close(client.Send)
+				if len(tH.Clients) == 0 {
 					stopLoop = true
 				}
 			}
-		case message := <-tH.broadcast:
-			for client := range tH.clients {
+		case message := <-tH.Broadcast:
+			for client := range tH.Clients {
 				select {
-				case client.send <- message:
+				case client.Send <- message:
 				default:
-					close(client.send)
-					delete(tH.clients, client)
+					close(client.Send)
+					delete(tH.Clients, client)
 				}
 			}
 		}

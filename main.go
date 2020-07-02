@@ -38,9 +38,10 @@ func main() {
 
 	e.Static("/static", "public")
 	routes.AuthRoutes(e.Group("/auth"))
-	routes.JWTCheckerRoutes(e.Group("/checker"))
-	routes.JWTProfileRoutes(e.Group("/profile"))
+	routes.CheckerRoutes(e.Group("/checker"))
+	routes.ProfileRoutes(e.Group("/profile"))
 	routes.OtherProfileRoutes(e.Group("/profiles"))
+	routes.WsRoutes(e.Group("/ws"))
 	routes.SystemRoutes(e.Group("/system"))
 
 	registeredRoutes, _ := json.MarshalIndent(e.Routes(), "", "  ")
