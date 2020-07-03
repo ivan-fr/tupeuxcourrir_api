@@ -56,7 +56,8 @@ func WsThread(ctx echo.Context) error {
 			"InitiatorThread.PhotoPath"})
 	}
 
-	sQB.Aggregate(orm.H{"COUNT": "Messages.IdMessage"})
+	sQB.Aggregate(orm.H{"COUNT": "Messages.IdMessage"}).
+		OrderBy(orm.H{"Messages.CreatedAt": "ASC"})
 	err = sQB.ApplyQuery()
 
 	if err != nil {
