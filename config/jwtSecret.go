@@ -1,3 +1,3 @@
 package config
 
-var JWTSecret = "mySecret"
+const JWTSecret = "mySecret"

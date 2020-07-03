@@ -33,6 +33,8 @@ var Upgrader = websocket.Upgrader{
 
 // ThreadClient is a middleman between the websocket connection and the ThreadHub.
 type ThreadClient struct {
+	IdUser int
+
 	ThreadHub *ThreadHub
 
 	// The websocket connection.

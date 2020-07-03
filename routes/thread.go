@@ -8,7 +8,7 @@ import (
 	TPCMiddleware "tupeuxcourrir_api/middleware"
 )
 
-func WsRoutes(group *echo.Group) {
+func WsThreadRoutes(group *echo.Group) {
 	JwtConfig := TPCMiddleware.JWTConfig
 	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtLoginSubject)
 	group.GET("/thread", controllers.WsThread, middleware.JWTWithConfig(JwtConfig))

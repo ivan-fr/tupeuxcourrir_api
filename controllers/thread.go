@@ -66,7 +66,7 @@ func WsThread(ctx echo.Context) error {
 	targetThread = sQB.EffectiveModel.(*models.Thread)
 
 	threadHub := websockets.GetThreadHub(targetThread)
-	client := &websockets.ThreadClient{ThreadHub: threadHub, Conn: connexion}
+	client := &websockets.ThreadClient{IdUser: user.IdUser, ThreadHub: threadHub, Conn: connexion}
 	client.ThreadHub.Register <- client
 
 	wsEnterSend := echo.Map{"thread": targetThread, "aggregates": sQB.EffectiveAggregates}
