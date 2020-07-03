@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
@@ -31,7 +32,8 @@ func WsThread(ctx echo.Context) error {
 		return ctx.JSON(http.StatusUnauthorized, echo.Map{})
 	}
 
-	connexion, err := websockets.Upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
+	var connexion *websocket.Conn
+	connexion, err = websockets.Upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
 
 	if err != nil {
 		return err
@@ -44,6 +46,7 @@ func WsThread(ctx echo.Context) error {
 
 	if user.IdUser == targetThread.InitiatorThreadIdUser {
 		sQB.Select([]string{"*", "InitiatorThread.*", "Messages.*",
+			"ReceiverThread.IdUser",
 			"ReceiverThread.CreatedAt", "ReceiverThread.Pseudo",
 			"ReceiverThread.PhotoPath"})
 	} else {
