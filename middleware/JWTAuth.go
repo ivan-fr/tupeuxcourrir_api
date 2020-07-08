@@ -28,13 +28,6 @@ type (
 		// SuccessHandler defines a function which is executed for a valid token.
 		SuccessHandler JWTSuccessHandler
 
-		// ErrorHandler defines a function which is executed for an invalid token.
-		// It may be used to define a custom JWT error.
-		ErrorHandler JWTErrorHandler
-
-		// ErrorHandlerWithContext is almost identical to ErrorHandler, but it's passed the current context.
-		ErrorHandlerWithContext JWTErrorHandlerWithContext
-
 		// Signing key to validate token. Used as fallback if SigningKeys has length 0.
 		// Required. This or SigningKeys.
 		SigningKey interface{}
@@ -74,12 +67,6 @@ type (
 
 	// JWTSuccessHandler defines a function which is executed for a valid token.
 	JWTSuccessHandler func(ctx context.Context) context.Context
-
-	// JWTErrorHandler defines a function which is executed for an invalid token.
-	JWTErrorHandler func(error) error
-
-	// JWTErrorHandlerWithContext is almost identical to JWTErrorHandler, but it's passed the current context.
-	JWTErrorHandlerWithContext func(error, http.ResponseWriter, *http.Request) error
 
 	jwtExtractor func(*http.Request) string
 )
@@ -249,9 +236,9 @@ func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) JWTSuccessHandler {
 		} else {
 			if iJU.GiveMeSQB {
 				return context.WithValue(ctx, "uSQB", nil)
-			} else {
-				return context.WithValue(ctx, "user", nil)
 			}
+
+			return context.WithValue(ctx, "user", nil)
 		}
 	}
 }
