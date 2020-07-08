@@ -14,7 +14,7 @@ import (
 
 func CheckMail(ctx echo.Context) error {
 	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
-	claims := JWTContext.Claims.(*TPCMiddleware.JwtCustomClaims)
+	claims := JWTContext.Claims.(*TPCMiddleware.JwtUserCustomClaims)
 
 	if claims.Subject != config.JwtCheckEmailSubject {
 		return errors.New("wrong jwt subject")

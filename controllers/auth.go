@@ -82,7 +82,7 @@ func Login(ctx echo.Context) error {
 		expirationTime = time.Now().Add(5 * time.Hour)
 	}
 
-	claims := &TPCMiddleware.JwtCustomClaims{
+	claims := &TPCMiddleware.JwtUserCustomClaims{
 		UserID: user.IdUser,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
@@ -131,7 +131,7 @@ func ForgotPassword(ctx echo.Context) error {
 	if execute {
 		expirationTime := time.Now().Add(15 * time.Minute)
 
-		claims := &TPCMiddleware.JwtCustomClaims{
+		claims := &TPCMiddleware.JwtUserCustomClaims{
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),

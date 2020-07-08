@@ -1,23 +1,21 @@
 package routes
 
 import (
+	"github.com/gorilla/mux"
 	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/controllers"
 	TPCMiddleware "tupeuxcourrir_api/middleware"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
-func AuthRoutes(group *echo.Group) {
-	group.POST("/signUp", controllers.SignUp)
-	group.POST("/login", controllers.Login)
-	group.POST("/forgotPassword", controllers.ForgotPassword)
-	group.POST("/editPassword", controllers.EditPasswordFromLink)
+func AuthRoutes(group *mux.Router) {
+	group.HandleFunc("/signUp", controllers.SignUp).Methods("POST")
+	group.HandleFunc("/login", controllers.Login).Methods("POST")
+	group.HandleFunc("/forgotPassword", controllers.ForgotPassword).Methods("POST")
+	group.HandleFunc("/editPassword", controllers.EditPasswordFromLink).Methods("POST")
 
-	subgroup := group.Group("/jwt")
-	JwtConfig := TPCMiddleware.JWTConfig
+	subgroup := group.PathPrefix("/jwt").Subrouter()
+	JwtConfig := TPCMiddleware.MyJWTUserConfig
 	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtEditPasswordSubject)
 
-	subgroup.POST("/editPassword", controllers.EditPasswordFromLink, middleware.JWTWithConfig(JwtConfig))
+	subgroup.HandleFunc("/editPassword", controllers.EditPasswordFromLink).Subrouter().Use(TPCMiddleware.JWTWithConfig(JwtConfig))
 }

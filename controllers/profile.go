@@ -163,7 +163,7 @@ func SendForValidateMail(ctx echo.Context) error {
 	if execute {
 		expirationTime := time.Now().Add(15 * time.Minute)
 
-		newClaims := &TPCMiddleware.JwtCustomClaims{
+		newClaims := &TPCMiddleware.JwtUserCustomClaims{
 			UserID: user.IdUser,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
