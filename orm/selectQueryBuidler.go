@@ -55,7 +55,7 @@ func (sQB *SelectQueryBuilder) getAlias(fieldRelationshipName, wantedModel strin
 		sliceIndex)
 }
 
-func (sQB *SelectQueryBuilder) constructSql() string {
+func (sQB *SelectQueryBuilder) constructSQL() string {
 	switch {
 	case sQB.SectionSelect == "" && sQB.SectionAggregate == "":
 		sQB.SectionSelect = "SELECT *"
@@ -259,32 +259,24 @@ func (sQB *SelectQueryBuilder) Select(columns []string) *SelectQueryBuilder {
 	for _, column := range columns {
 		splitDot := strings.Split(column, ".")
 
-		switch len(splitDot) {
-		case 1:
-			if splitDot[len(splitDot)] == "*" {
+		if splitDot[len(splitDot)-1] == "*" {
+			switch len(splitDot) {
+			case 1:
 				effectiveColumns = append(effectiveColumns, getFieldNamesToScanFromModel(sQB.model)...)
-			} else {
-				effectiveColumns = append(effectiveColumns, column)
-			}
-		case 2:
-			if splitDot[len(splitDot)] == "*" {
+			case 2:
 				for _, askedColumn := range getFieldNamesToScanFromModel(sQB.relationshipTargets[splitDot[0]][0]) {
 					effectiveColumns = append(effectiveColumns, fmt.Sprintf("%v.%v", splitDot[0], askedColumn))
 				}
-			} else {
-				effectiveColumns = append(effectiveColumns, column)
-			}
-		case 3:
-			if splitDot[len(splitDot)] == "*" {
+			case 3:
 				sliceIndex := sQB.getIndexOfWantedModelFromRelationshipTargets(splitDot[0], splitDot[1])
 				for _, askedColumn := range getFieldNamesToScanFromModel(sQB.relationshipTargets[splitDot[0]][sliceIndex]) {
 					effectiveColumns = append(effectiveColumns, fmt.Sprintf("%v.%v.%v", splitDot[0], splitDot[1], askedColumn))
 				}
-			} else {
-				effectiveColumns = append(effectiveColumns, column)
+			default:
+				panic("undefined configuration")
 			}
-		default:
-			panic("undefined configuration")
+		} else {
+			effectiveColumns = append(effectiveColumns, column)
 		}
 	}
 
@@ -332,7 +324,7 @@ func (sQB *SelectQueryBuilder) ApplyQuery() error {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	rows, err := connection.Db.Query(sQB.constructSql(), sQB.getStmts()...)
+	rows, err := connection.Db.Query(sQB.constructSQL(), sQB.getStmts()...)
 
 	if err == nil {
 		for rows.Next() {
@@ -351,7 +343,7 @@ func (sQB *SelectQueryBuilder) ApplyQueryRow() error {
 	connection := db.GetConnectionFromDB()
 	defer sQB.Clean()
 
-	row := connection.Db.QueryRow(sQB.constructSql(), sQB.getStmts()...)
+	row := connection.Db.QueryRow(sQB.constructSQL(), sQB.getStmts()...)
 	err := sQB.hydrate(row.Scan)
 
 	return err

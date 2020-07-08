@@ -1,24 +1,28 @@
 package orm
 
+// Model ...
 type Model interface {
 	PutRelationshipConfig()
 }
 
+// ManyToManyRelationShip ...
 type ManyToManyRelationShip struct {
-	Target                      Model
-	IntermediateTarget          Model
+	Target                      Model `json:"-"`
+	IntermediateTarget          Model `json:"-"`
 	EffectiveTargets            []interface{}
 	EffectiveIntermediateTarget interface{}
 }
 
+// ManyToOneRelationShip ...
 type ManyToOneRelationShip struct {
-	Target          Model
+	Target          Model `json:"-"`
 	EffectiveTarget interface{}
-	AssociateColumn string
+	AssociateColumn string `json:"-"`
 }
 
+// OneToManyRelationShip ...
 type OneToManyRelationShip struct {
-	Target           Model
+	Target           Model `json:"-"`
 	EffectiveTargets []interface{}
-	FieldMTO         string
+	FieldMTO         string `json:"-"`
 }
