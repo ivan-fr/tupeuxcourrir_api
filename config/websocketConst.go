@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"github.com/gorilla/websocket"
+	"time"
+)
 
 const (
 	// Time allowed to write a message to the peer.
@@ -15,3 +18,8 @@ const (
 	// Maximum message size allowed from peer.
 	MaxMessageSize = 512
 )
+
+var WebsocketUpgrade = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}

@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -10,6 +12,7 @@ import (
 	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
+	"tupeuxcourrir_api/utils"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -146,7 +149,8 @@ func JWTWithConfig(config JWTConfig) mux.MiddlewareFunc {
 			var err error
 			auth := extractor(r)
 			if auth == "" {
-				http.Error(w, "forbidden", http.StatusForbidden)
+				w.WriteHeader(http.StatusForbidden)
+				_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("forbidden")))
 			}
 			token := new(jwt.Token)
 			// Issue #647, #656
@@ -165,7 +169,8 @@ func JWTWithConfig(config JWTConfig) mux.MiddlewareFunc {
 				}
 				next.ServeHTTP(w, r.WithContext(ctx))
 			} else {
-				http.Error(w, "invalid or expired jwt", http.StatusUnauthorized)
+				w.WriteHeader(http.StatusUnauthorized)
+				_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("invalid or expired jwt")))
 			}
 		})
 	}

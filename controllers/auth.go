@@ -2,8 +2,11 @@ package controllers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/schema"
 	"log"
 	"net/http"
 	"time"
@@ -19,21 +22,35 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func SignUp(ctx echo.Context) error {
+func SignUp(w http.ResponseWriter, r *http.Request) {
 	var form forms.SignUpForm
 	var user models.User
 
-	if err := ctx.Bind(&form); err != nil {
-		return err
-	}
+	err := r.ParseForm()
 
-	if err := ctx.Validate(&form); err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		panic(err)
+	}
+
+	decoder := schema.NewDecoder()
+	err = decoder.Decode(&form, r.PostForm)
+
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusBadRequest)
+
+	if err = validator.New().Struct(&form); err != nil {
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
+	}
+
+	var hash []byte
+	hash, err = bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
+	if err != nil {
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	form.EncryptedPassword = string(hash)
@@ -41,38 +58,53 @@ func SignUp(ctx echo.Context) error {
 	orm.BindForm(&user, &form)
 	iQB := orm.GetInsertQueryBuilder(models.NewUser(), &user)
 
-	if _, err := iQB.ApplyInsert(); err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	if _, err = iQB.ApplyInsert(); err != nil {
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
-	return ctx.JSON(http.StatusOK, orm.H{})
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(nil)
 }
 
-func Login(ctx echo.Context) error {
+func Login(w http.ResponseWriter, r *http.Request) {
 	var loginForm forms.LoginForm
 
-	if err := ctx.Bind(&loginForm); err != nil {
-		return err
+	err := r.ParseForm()
+
+	if err != nil {
+		panic(err)
 	}
 
-	if err := ctx.Validate(&loginForm); err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	decoder := schema.NewDecoder()
+	err = decoder.Decode(&loginForm, r.PostForm)
+
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusBadRequest)
+	if err = validator.New().Struct(&loginForm); err != nil {
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
 		Where(orm.And(orm.H{"Email": loginForm.Email}))
 
-	err := sQB.ApplyQueryRow()
+	err = sQB.ApplyQueryRow()
 
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	user := sQB.EffectiveModel.(*models.User)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword),
 		[]byte(loginForm.EncryptedPassword)); err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	var expirationTime time.Time
@@ -90,27 +122,39 @@ func Login(ctx echo.Context) error {
 		},
 	}
 
-	return ctx.JSON(http.StatusOK, orm.H{"token": claims.GetToken()})
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(orm.H{"token": claims.GetToken()})
 }
 
-func ForgotPassword(ctx echo.Context) error {
+func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPasswordForm forms.ForgotPasswordForm
 
-	if err := ctx.Bind(&forgotPasswordForm); err != nil {
-		return err
+	err := r.ParseForm()
+
+	if err != nil {
+		panic(err)
 	}
 
-	if err := ctx.Validate(&forgotPasswordForm); err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	decoder := schema.NewDecoder()
+	err = decoder.Decode(&forgotPasswordForm, r.PostForm)
+
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusBadRequest)
+	if err = validator.New().Struct(&forgotPasswordForm); err != nil {
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
 		Where(orm.And(orm.H{"Email": forgotPasswordForm.Email}))
 
-	err := sQB.ApplyQueryRow()
+	err = sQB.ApplyQueryRow()
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	user := sQB.EffectiveModel.(*models.User)
@@ -144,7 +188,7 @@ func ForgotPassword(ctx echo.Context) error {
 		mailer := utils.NewMail([]string{user.Email}, "Change your password", "")
 		err = mailer.ParseTemplate("htmlMail/changePassword.html",
 			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
-				"host": ctx.Request().Host, "token": token})
+				"host": r.Host, "token": token})
 
 		if err != nil {
 			log.Fatal(err)
@@ -153,49 +197,65 @@ func ForgotPassword(ctx echo.Context) error {
 		err = mailer.SendEmail()
 
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		user.SentChangePasswordMailAt = sql.NullTime{Time: time.Now(), Valid: true}
 		uQB := orm.GetUpdateQueryBuilder(user)
 		_, errSub := uQB.ApplyUpdate()
 		if errSub != nil {
-			return errSub
+			panic(errSub)
 		}
 
-		return ctx.JSON(http.StatusOK, echo.Map{})
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(nil)
 	}
 
 	err = errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
-	return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 }
 
-func EditPasswordFromLink(ctx echo.Context) error {
-	concernUser := ctx.Get("user")
+func EditPasswordFromLink(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusBadRequest)
+	concernUser := r.Context().Value("user")
 
 	if concernUser == nil {
-		return errors.New("wrong jwt subject")
+		_ = json.NewEncoder(w).Encode("wrong token")
+		return
 	}
 
 	concernUser = concernUser.(*models.User)
 
 	var form forms.EditPasswordForm
 
-	if err := ctx.Bind(&form); err != nil {
-		return err
+	err := r.ParseForm()
+
+	if err != nil {
+		panic(err)
 	}
 
-	if err := ctx.Validate(&form); err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	decoder := schema.NewDecoder()
+	err = decoder.Decode(&form, r.PostForm)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err = validator.New().Struct(&form); err != nil {
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	if form.EncryptedPassword != form.ConfirmPassword {
-		return errors.New("the password aren't same")
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("the password aren't same")))
+		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
+	var hash []byte
+	hash, err = bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	form.EncryptedPassword = string(hash)
@@ -205,8 +265,9 @@ func EditPasswordFromLink(ctx echo.Context) error {
 	uQB := orm.GetUpdateQueryBuilder(concernUser)
 	_, errSub := uQB.ApplyUpdate()
 	if errSub != nil {
-		return errSub
+		panic(errSub)
 	}
 
-	return ctx.JSON(http.StatusOK, orm.H{})
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(nil)
 }

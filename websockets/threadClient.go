@@ -12,11 +12,6 @@ import (
 	"tupeuxcourrir_api/models"
 )
 
-var Upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
 // ThreadClient is a middleman between the websocket connection and the ThreadHub.
 type ThreadClient struct {
 	IdUser int

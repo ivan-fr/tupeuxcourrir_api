@@ -30,9 +30,8 @@ func GetConnectionFromDB() *connection {
 
 func Close() {
 	if singletonConnector != nil {
-		connection := singletonConnector
-		if err := connection.Db.Close(); err != nil {
-			log.Println(err)
+		if err := singletonConnector.Db.Close(); err != nil {
+			log.Fatal(err)
 		}
 	}
 }

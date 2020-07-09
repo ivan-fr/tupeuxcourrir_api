@@ -33,7 +33,7 @@ func WsThread(ctx echo.Context) error {
 	}
 
 	var connexion *websocket.Conn
-	connexion, err = websockets.Upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
+	connexion, err = websockets.Upgrade.Upgrade(ctx.Response(), ctx.Request(), nil)
 
 	if err != nil {
 		return err
