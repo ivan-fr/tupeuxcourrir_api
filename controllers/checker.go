@@ -1,23 +1,26 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"tupeuxcourrir_api/config"
 	TPCMiddleware "tupeuxcourrir_api/middleware"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
+	"tupeuxcourrir_api/utils"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
 )
 
-func CheckMail(ctx echo.Context) error {
-	JWTContext := ctx.Get("JWTContext").(*jwt.Token)
+func CheckMail(w http.ResponseWriter, r *http.Request) {
+	JWTContext := r.Context().Value("JWTContext").(*jwt.Token)
 	claims := JWTContext.Claims.(*TPCMiddleware.JwtUserCustomClaims)
+	w.WriteHeader(http.StatusUnauthorized)
 
 	if claims.Subject != config.JwtCheckEmailSubject {
-		return errors.New("wrong jwt subject")
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("wrong jwt subject")))
+		return
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
@@ -26,13 +29,14 @@ func CheckMail(ctx echo.Context) error {
 	err := sQB.ApplyQueryRow()
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	concernUser := sQB.EffectiveModel.(*models.User)
 
 	if concernUser.CheckedEmail {
-		return ctx.JSON(http.StatusUnauthorized, echo.Map{})
+		_ = json.NewEncoder(w).Encode(nil)
+		return
 	}
 
 	concernUser.CheckedEmail = true
@@ -40,8 +44,9 @@ func CheckMail(ctx echo.Context) error {
 	uQB := orm.GetUpdateQueryBuilder(concernUser)
 	_, errSub := uQB.ApplyUpdate()
 	if errSub != nil {
-		return errSub
+		panic(errSub)
 	}
 
-	return ctx.JSON(http.StatusOK, echo.Map{})
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(nil)
 }
