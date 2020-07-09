@@ -17,5 +17,8 @@ func AuthRoutes(group *mux.Router) {
 	JwtConfig := TPCMiddleware.MyJWTUserConfig
 	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(&TPCMiddleware.ImplementJWTUser{Subject: config.JwtEditPasswordSubject})
 
-	subgroup.HandleFunc("/editPassword", controllers.EditPasswordFromLink).Subrouter().Use(TPCMiddleware.JWTWithConfig(JwtConfig))
+	subgroup.HandleFunc("/editPassword", controllers.EditPasswordFromLink).
+		Methods("POST").
+		Subrouter().
+		Use(TPCMiddleware.JWTWithConfig(JwtConfig))
 }

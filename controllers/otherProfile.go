@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 	"tupeuxcourrir_api/models"
@@ -10,11 +10,11 @@ import (
 	"tupeuxcourrir_api/utils"
 )
 
-func GetOtherProfile(ctx echo.Context) error {
-	idTarget, err := strconv.Atoi(ctx.Param("id"))
+func GetOtherProfile(w http.ResponseWriter, r *http.Request) {
+	idTarget, err := strconv.Atoi(r.URL.Query().Get("id"))
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
@@ -23,24 +23,29 @@ func GetOtherProfile(ctx echo.Context) error {
 	err = sQB.ApplyQueryRow()
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	return ctx.JSON(http.StatusOK, sQB.EffectiveModel.(*models.User))
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(sQB.EffectiveModel.(*models.User))
 }
 
-func MakeThreadWithOtherProfile(ctx echo.Context) error {
-	user := ctx.Get("user").(*models.User)
+func MakeThreadWithOtherProfile(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(*models.User)
 
-	idTarget, err := strconv.Atoi(ctx.Param("id"))
+	idTarget, err := strconv.Atoi(r.URL.Query().Get("id"))
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
+	w.WriteHeader(http.StatusUnauthorized)
+
 	if idTarget == user.IdUser {
-		err = errors.New("the receiver of your thread must have different ID from you")
-		return ctx.JSON(http.StatusUnauthorized, utils.JsonErrorPattern(err))
+		_ = json.NewEncoder(w).Encode(
+			utils.JsonErrorPattern(
+				errors.New("the receiver of your thread must have different ID from you")))
+		return
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewUser()).
@@ -48,7 +53,7 @@ func MakeThreadWithOtherProfile(ctx echo.Context) error {
 	err = sQB.ApplyQueryRow()
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	targetUser := sQB.EffectiveModel.(*models.User)
@@ -61,8 +66,9 @@ func MakeThreadWithOtherProfile(ctx echo.Context) error {
 	_, err = iQB.ApplyInsert()
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	return ctx.JSON(http.StatusOK, echo.Map{})
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(nil)
 }
