@@ -20,7 +20,6 @@ import (
 	"tupeuxcourrir_api/utils"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
 )
 
 func GetProfile(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +168,7 @@ func SendForValidateMail(w http.ResponseWriter, r *http.Request) {
 
 		mailer := utils.NewMail([]string{user.Email}, "Validate your email", "")
 		err := mailer.ParseTemplate("htmlMail/checkMail.html",
-			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
+			orm.H{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
 				"host": r.Host, "token": token})
 
 		if err != nil {

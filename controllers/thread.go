@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 	"tupeuxcourrir_api/config"
@@ -76,7 +75,7 @@ func WsThread(w http.ResponseWriter, r *http.Request) {
 	client := &websockets.ThreadClient{IdUser: user.IdUser, ThreadHub: threadHub, Conn: connexion}
 	client.ThreadHub.Register <- client
 
-	wsEnterSend := echo.Map{"thread": targetThread, "aggregates": sQB.EffectiveAggregates}
+	wsEnterSend := orm.H{"thread": targetThread, "aggregates": sQB.EffectiveAggregates}
 	err = client.Conn.WriteJSON(wsEnterSend)
 
 	if err != nil {

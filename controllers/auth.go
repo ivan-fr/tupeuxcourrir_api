@@ -18,7 +18,6 @@ import (
 	"tupeuxcourrir_api/utils"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -187,7 +186,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 		mailer := utils.NewMail([]string{user.Email}, "Change your password", "")
 		err = mailer.ParseTemplate("htmlMail/changePassword.html",
-			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
+			orm.H{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
 				"host": r.Host, "token": token})
 
 		if err != nil {
