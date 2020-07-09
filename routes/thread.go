@@ -10,6 +10,6 @@ import (
 
 func WsThreadRoutes(group *echo.Group) {
 	JwtConfig := TPCMiddleware.JWTConfig
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwtSuccessHandler(config.JwtLoginSubject)
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(config.JwtLoginSubject)
 	group.GET("/thread", controllers.WsThread, middleware.JWTWithConfig(JwtConfig))
 }

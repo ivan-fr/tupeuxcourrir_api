@@ -11,7 +11,7 @@ import (
 
 func ProfileRoutes(group *echo.Group) {
 	JwtConfig := TPCMiddleware.JWTConfig
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwtSuccessHandler(config.JwtLoginSubject)
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(config.JwtLoginSubject)
 
 	group.GET("", controllers.GetProfile, middleware.JWTWithConfig(JwtConfig))
 	group.POST("/sendForValidateMail", controllers.SendForValidateMail, middleware.JWTWithConfig(JwtConfig))

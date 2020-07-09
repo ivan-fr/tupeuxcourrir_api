@@ -201,9 +201,9 @@ func (jCC *JwtUserCustomClaims) GetToken() string {
 	return stringToken
 }
 
-func ImplementUserFromJwtSuccessHandler(iJU *ImplementJWTUser) JWTSuccessHandler {
+func ImplementUserJwtSuccessHandler(iJU *ImplementJWTUser) JWTSuccessHandler {
 	return func(ctx context.Context) context.Context {
-		JWTContext := ctx.Value("JWTContextUser").(*jwt.Token)
+		JWTContext := ctx.Value(MyJWTUserConfig.ContextKey).(*jwt.Token)
 		claims := JWTContext.Claims.(*JwtUserCustomClaims)
 
 		if claims.Subject == iJU.Subject {
