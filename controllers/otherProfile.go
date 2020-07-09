@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"tupeuxcourrir_api/models"
@@ -11,7 +12,8 @@ import (
 )
 
 func GetOtherProfile(w http.ResponseWriter, r *http.Request) {
-	idTarget, err := strconv.Atoi(r.URL.Query().Get("id"))
+	vars := mux.Vars(r)
+	idTarget, err := strconv.Atoi(vars["id"])
 
 	if err != nil {
 		panic(err)
@@ -33,7 +35,8 @@ func GetOtherProfile(w http.ResponseWriter, r *http.Request) {
 func MakeThreadWithOtherProfile(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(*models.User)
 
-	idTarget, err := strconv.Atoi(r.URL.Query().Get("id"))
+	vars := mux.Vars(r)
+	idTarget, err := strconv.Atoi(vars["id"])
 
 	if err != nil {
 		panic(err)

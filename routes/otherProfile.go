@@ -8,11 +8,11 @@ import (
 )
 
 func OtherProfileRoutes(group *mux.Router) {
-	group.HandleFunc("/:id", controllers.GetOtherProfile).Methods("GET")
+	group.HandleFunc("/{id}", controllers.GetOtherProfile).Methods("GET")
 
 	JwtConfig := TPCMiddleware.MyJWTUserConfig
 	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(&TPCMiddleware.ImplementJWTUser{Subject: config.JwtLoginSubject})
-	group.HandleFunc("/:id/makeThread", controllers.MakeThreadWithOtherProfile).
+	group.HandleFunc("/{id}/makeThread", controllers.MakeThreadWithOtherProfile).
 		Methods("POST").
 		Subrouter().
 		Use(TPCMiddleware.JWTWithConfig(JwtConfig))
