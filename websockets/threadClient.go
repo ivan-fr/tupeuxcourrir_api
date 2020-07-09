@@ -5,25 +5,11 @@
 package websockets
 
 import (
+	"github.com/gorilla/websocket"
 	"log"
 	"time"
+	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/models"
-
-	"github.com/gorilla/websocket"
-)
-
-const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 8) / 10
-
-	// Maximum message size allowed from peer.
-	maxMessageSize = 512
 )
 
 var Upgrader = websocket.Upgrader{
@@ -55,10 +41,10 @@ func (c *ThreadClient) ReadPump() {
 		_ = c.Conn.Close()
 	}()
 
-	c.Conn.SetReadLimit(maxMessageSize)
-	_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetReadLimit(config.MaxMessageSize)
+	_ = c.Conn.SetReadDeadline(time.Now().Add(config.PongWait))
 	c.Conn.SetPongHandler(func(string) error {
-		_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = c.Conn.SetReadDeadline(time.Now().Add(config.PongWait))
 		return nil
 	})
 
@@ -83,7 +69,7 @@ func (c *ThreadClient) ReadPump() {
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
 func (c *ThreadClient) WritePump() {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(config.PingPeriod)
 	defer func() {
 		ticker.Stop()
 		_ = c.Conn.Close()
@@ -92,7 +78,7 @@ func (c *ThreadClient) WritePump() {
 	for {
 		select {
 		case message, ok := <-c.Send:
-			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(config.WriteWait))
 			if !ok {
 				// The ThreadHub closed the channel.
 				_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -105,7 +91,7 @@ func (c *ThreadClient) WritePump() {
 				return
 			}
 		case <-ticker.C:
-			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(config.WriteWait))
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
