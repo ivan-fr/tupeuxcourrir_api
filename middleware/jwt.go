@@ -14,14 +14,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type ImplementJWTUser struct {
-	AddInitiatedThread bool
-	AddRoles           bool
-	AddReceivedThread  bool
-	GiveMeSQB          bool
-	Subject            string
-}
-
 type (
 	// JWTConfig defines the config for JWT middleware.
 	JWTConfig struct {
@@ -74,6 +66,14 @@ type (
 	JWTSuccessHandler func(ctx context.Context) context.Context
 
 	jwtExtractor func(*http.Request) string
+
+	ImplementJWTUser struct {
+		AddInitiatedThread bool
+		AddRoles           bool
+		AddReceivedThread  bool
+		GiveMeSQB          bool
+		Subject            string
+	}
 )
 
 var MyJWTUserConfig = JWTConfig{
@@ -196,11 +196,7 @@ func (jCC *JwtUserCustomClaims) GetToken() string {
 	return stringToken
 }
 
-func ImplementUserFromJwt(subject string) JWTSuccessHandler {
-	return ImplementUserFromJWTWithConfig(&ImplementJWTUser{Subject: subject})
-}
-
-func ImplementUserFromJWTWithConfig(iJU *ImplementJWTUser) JWTSuccessHandler {
+func ImplementUserFromJwtSuccessHandler(iJU *ImplementJWTUser) JWTSuccessHandler {
 	return func(ctx context.Context) context.Context {
 		JWTContext := ctx.Value("JWTContextUser").(*jwt.Token)
 		claims := JWTContext.Claims.(*JwtUserCustomClaims)

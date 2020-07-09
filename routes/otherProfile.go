@@ -12,7 +12,7 @@ func OtherProfileRoutes(group *echo.Group) {
 	group.GET("/:id", controllers.GetOtherProfile)
 
 	JwtConfig := TPCMiddleware.JWTConfig
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtLoginSubject)
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwtSuccessHandler(config.JwtLoginSubject)
 
 	group.POST("/:id/makeThread", controllers.MakeThreadWithOtherProfile, middleware.JWTWithConfig(JwtConfig))
 }

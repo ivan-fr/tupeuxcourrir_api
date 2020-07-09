@@ -11,14 +11,14 @@ import (
 
 func ProfileRoutes(group *echo.Group) {
 	JwtConfig := TPCMiddleware.JWTConfig
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwt(config.JwtLoginSubject)
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJwtSuccessHandler(config.JwtLoginSubject)
 
 	group.GET("", controllers.GetProfile, middleware.JWTWithConfig(JwtConfig))
 	group.POST("/sendForValidateMail", controllers.SendForValidateMail, middleware.JWTWithConfig(JwtConfig))
 	group.PUT("/putPhoto", controllers.PutPhoto, middleware.JWTWithConfig(JwtConfig))
 	group.PUT("/putAddress", controllers.PutAddress, middleware.JWTWithConfig(JwtConfig))
 
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJWTWithConfig(
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJWTSuccessHandler(
 		&TPCMiddleware.ImplementJWTUser{AddInitiatedThread: true,
 			AddReceivedThread: true,
 			Subject:           config.JwtLoginSubject,
