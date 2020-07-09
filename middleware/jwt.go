@@ -65,6 +65,11 @@ type (
 		keyFunc jwt.Keyfunc
 	}
 
+	JwtUserCustomClaims struct {
+		UserID int `json:"id"`
+		jwt.StandardClaims
+	}
+
 	// JWTSuccessHandler defines a function which is executed for a valid token.
 	JWTSuccessHandler func(ctx context.Context) context.Context
 
@@ -176,11 +181,6 @@ func jwtFromHeader(header string, authScheme string) jwtExtractor {
 		}
 		return ""
 	}
-}
-
-type JwtUserCustomClaims struct {
-	UserID int `json:"id"`
-	jwt.StandardClaims
 }
 
 func (jCC *JwtUserCustomClaims) GetToken() string {
