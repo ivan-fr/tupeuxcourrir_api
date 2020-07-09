@@ -1,19 +1,20 @@
 package controllers
 
 import (
-	"github.com/labstack/echo/v4"
+	"encoding/json"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
 	"tupeuxcourrir_api/utils"
 )
 
-func GetUri(ctx echo.Context) error {
-	params := strings.Split(ctx.QueryParam("params"), ",")
-	paramsInterface := make([]interface{}, len(params))
+func GetUriBox(mainRouter *mux.Router) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := strings.Split(r.URL.Query().Get("params"), ",")
 
-	for i, v := range params {
-		paramsInterface[i] = v
+		url, _ := mainRouter.Get(r.URL.Query().Get("routeNames")).URL(params...)
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(
+			utils.JsonOkPattern(url.String()))
 	}
-
-	return ctx.JSON(http.StatusOK, utils.JsonOkPattern(ctx.Echo().Reverse(ctx.QueryParam("routeName"), paramsInterface...)))
 }

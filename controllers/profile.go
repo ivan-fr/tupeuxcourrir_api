@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/labstack/gommon/random"
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/schema"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"strings"
@@ -22,130 +23,123 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func GetProfile(ctx echo.Context) error {
-	user := ctx.Get("user").(*models.User)
-	return ctx.JSON(http.StatusOK, user)
+func GetProfile(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(*models.User)
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(user)
 }
 
-func GetThreads(ctx echo.Context) error {
-	uSQB := ctx.Get("uSQB").(*orm.SelectQueryBuilder)
+func GetThreads(w http.ResponseWriter, r *http.Request) {
+	uSQB := r.Context().Value("uSQB").(*orm.SelectQueryBuilder)
 	err := uSQB.ApplyQuery()
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	user := uSQB.EffectiveModel.(*models.User)
-	return ctx.JSON(http.StatusOK, user)
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(uSQB.EffectiveModel.(*models.User))
 }
 
-func PutAddress(ctx echo.Context) error {
+func PutAddress(w http.ResponseWriter, r *http.Request) {
 	var form forms.PutAddressForm
 
-	mapUser := ctx.Get("user").(orm.H)
+	user := r.Context().Value("user").(*models.User)
+	err := r.ParseForm()
 
-	if mapUser == nil {
-		return errors.New("wrong jwt subject")
+	if err != nil {
+		panic(err)
 	}
 
-	user := mapUser["User"].(*models.User)
+	decoder := schema.NewDecoder()
+	err = decoder.Decode(&form, r.PostForm)
 
-	if err := ctx.Bind(&form); err != nil {
-		return err
+	if err != nil {
+		panic(err)
 	}
 
-	if err := ctx.Validate(&form); err != nil {
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	w.WriteHeader(http.StatusBadRequest)
+
+	if err = validator.New().Struct(&form); err != nil {
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
 	orm.BindForm(user, &form)
 	uQB := orm.GetUpdateQueryBuilder(user)
 
 	if _, err := uQB.ApplyUpdate(); err != nil {
-		return err
+		panic(err)
 	}
 
-	return ctx.JSON(http.StatusOK, orm.H{})
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(nil)
 }
 
-func PutPhoto(ctx echo.Context) error {
-	photoFile, err := ctx.FormFile("photoFile")
+func PutPhoto(w http.ResponseWriter, r *http.Request) {
+	photoFile, photoFileHeader, err := r.FormFile("photoFile")
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	contentType := photoFile.Header.Get("Content-Type")
+	contentType := photoFileHeader.Header.Get("Content-Type")
 
 	if contentType != "image/jpeg" && contentType != "image/png" {
+		w.WriteHeader(http.StatusBadRequest)
 		err = errors.New("only accept jpeg & png, current : " + contentType)
-		return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
+		return
 	}
 
-	var src multipart.File
-	src, err = photoFile.Open()
-	if err != nil {
-		return err
-	}
 	defer func() {
-		_ = src.Close()
+		_ = photoFile.Close()
 	}()
 
-	mapUser := ctx.Get("user").(orm.H)
-	user := mapUser["User"].(*models.User)
-
-	if mapUser == nil {
-		return errors.New("wrong jwt subject")
-	}
+	user := r.Context().Value("user").(*models.User)
 
 	if user.PhotoPath.Valid {
 		err = os.Remove("public/uploads/" + user.PhotoPath.String)
 
 		if err != nil {
-			return err
+			panic(err)
 		}
 	}
 
-	splitDot := strings.Split(photoFile.Filename, ".")
-	photoFile.Filename = random.String(8) + "." + splitDot[len(splitDot)-1]
+	splitDot := strings.Split(photoFileHeader.Filename, ".")
+	photoFileHeader.Filename = string(user.IdUser) + "." + splitDot[len(splitDot)-1]
 
-	user.PhotoPath.String = photoFile.Filename
+	user.PhotoPath.String = photoFileHeader.Filename
 	user.PhotoPath.Valid = true
 
 	// Destination
 	var dst *os.File
-	dst, err = os.Create("public/uploads/" + photoFile.Filename)
+	dst, err = os.Create("public/uploads/" + photoFileHeader.Filename)
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer func() {
 		_ = dst.Close()
 	}()
 
 	// Copy
-	if _, err = io.Copy(dst, src); err != nil {
-		return err
+	if _, err = io.Copy(dst, photoFile); err != nil {
+		panic(err)
 	}
 
 	uQB := orm.GetUpdateQueryBuilder(user)
 	_, errSub := uQB.ApplyUpdate()
 	if errSub != nil {
-		return errSub
+		panic(errSub)
 	}
 
-	return ctx.JSON(http.StatusOK, echo.Map{})
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(nil)
 }
 
-func SendForValidateMail(ctx echo.Context) error {
-	mapUser := ctx.Get("user").(orm.H)
-	var err error
-
-	if mapUser == nil {
-		return errors.New("wrong jwt subject")
-	}
-
-	user := mapUser["User"].(*models.User)
+func SendForValidateMail(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(*models.User)
 
 	var execute = true
 
@@ -174,30 +168,32 @@ func SendForValidateMail(ctx echo.Context) error {
 		token := newClaims.GetToken()
 
 		mailer := utils.NewMail([]string{user.Email}, "Validate your email", "")
-		err = mailer.ParseTemplate("htmlMail/checkMail.html",
+		err := mailer.ParseTemplate("htmlMail/checkMail.html",
 			echo.Map{"fullName": fmt.Sprintf("%v %v", user.LastName, user.FirstName),
-				"host": ctx.Request().Host, "token": token})
+				"host": r.Host, "token": token})
 
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		err = mailer.SendEmail()
 
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		user.SentValidateMailAt = sql.NullTime{Time: time.Now(), Valid: true}
 		uQB := orm.GetUpdateQueryBuilder(user)
 		_, errSub := uQB.ApplyUpdate()
 		if errSub != nil {
-			return errSub
+			panic(errSub)
 		}
 
-		return ctx.JSON(http.StatusOK, echo.Map{})
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(nil)
 	}
 
-	err = errors.New("we had already sent this mail type in last 15 minutes or your email is already checked")
-	return ctx.JSON(http.StatusBadRequest, utils.JsonErrorPattern(err))
+	err := errors.New("we had already sent this mail type in last 15 minutes or your email is already checked")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 }

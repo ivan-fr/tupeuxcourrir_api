@@ -1,5 +1,5 @@
 package forms
 
 type ForgotPasswordForm struct {
-	Email string `form:"email" validate:"required,email"`
+	Email string `schema:"email" validate:"required,email"`
 }

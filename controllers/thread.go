@@ -1,21 +1,25 @@
 package controllers
 
 import (
+	"encoding/json"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
+	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/models"
 	"tupeuxcourrir_api/orm"
 	"tupeuxcourrir_api/websockets"
 )
 
-func WsThread(ctx echo.Context) error {
-	user := ctx.Get("user").(*models.User)
-	idThread, err := strconv.Atoi(ctx.Param("id"))
+func WsThread(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(*models.User)
+	vars := mux.Vars(r)
+	idThread, err := strconv.Atoi(vars["id"])
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	sQB := orm.GetSelectQueryBuilder(models.NewThread()).
@@ -23,20 +27,21 @@ func WsThread(ctx echo.Context) error {
 	err = sQB.ApplyQueryRow()
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	targetThread := sQB.EffectiveModel.(*models.Thread)
 
 	if targetThread.InitiatorThreadIdUser != user.IdUser && targetThread.ReceiverThreadIdUser != user.IdUser {
-		return ctx.JSON(http.StatusUnauthorized, echo.Map{})
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(nil)
 	}
 
 	var connexion *websocket.Conn
-	connexion, err = websockets.Upgrade.Upgrade(ctx.Response(), ctx.Request(), nil)
+	connexion, err = config.WebsocketUpgrade.Upgrade(w, r, nil)
 
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	sQB.Consider("Messages").
@@ -61,7 +66,8 @@ func WsThread(ctx echo.Context) error {
 	err = sQB.ApplyQuery()
 
 	if err != nil {
-		return err
+		_ = connexion.Close()
+		panic(err)
 	}
 
 	targetThread = sQB.EffectiveModel.(*models.Thread)
@@ -74,11 +80,12 @@ func WsThread(ctx echo.Context) error {
 	err = client.Conn.WriteJSON(wsEnterSend)
 
 	if err != nil {
-		return err
+		_ = connexion.Close()
+		panic(err)
 	}
 
 	go client.WritePump()
 	go client.ReadPump()
 
-	return err
+	return
 }

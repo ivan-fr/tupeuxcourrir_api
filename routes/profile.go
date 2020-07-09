@@ -1,28 +1,40 @@
 package routes
 
 import (
+	"github.com/gorilla/mux"
 	"tupeuxcourrir_api/config"
 	"tupeuxcourrir_api/controllers"
 	TPCMiddleware "tupeuxcourrir_api/middleware"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
-func ProfileRoutes(group *echo.Group) {
-	JwtConfig := TPCMiddleware.JWTConfig
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(config.JwtLoginSubject)
+func ProfileRoutes(group *mux.Router) {
+	JwtConfig := TPCMiddleware.MyJWTUserConfig
+	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(&TPCMiddleware.ImplementJWTUser{Subject: config.JwtLoginSubject})
 
-	group.GET("", controllers.GetProfile, middleware.JWTWithConfig(JwtConfig))
-	group.POST("/sendForValidateMail", controllers.SendForValidateMail, middleware.JWTWithConfig(JwtConfig))
-	group.PUT("/putPhoto", controllers.PutPhoto, middleware.JWTWithConfig(JwtConfig))
-	group.PUT("/putAddress", controllers.PutAddress, middleware.JWTWithConfig(JwtConfig))
+	group.HandleFunc("", controllers.GetProfile).
+		Subrouter().
+		Use(TPCMiddleware.JWTWithConfig(JwtConfig))
 
-	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserFromJWTSuccessHandler(
+	group.HandleFunc("/sendForValidateMail", controllers.SendForValidateMail).
+		Subrouter().
+		Use(TPCMiddleware.JWTWithConfig(JwtConfig))
+
+	group.HandleFunc("/putPhoto", controllers.PutPhoto).
+		Subrouter().
+		Use(TPCMiddleware.JWTWithConfig(JwtConfig))
+
+	group.HandleFunc("/putAddress", controllers.PutAddress).
+		Subrouter().
+		Use(TPCMiddleware.JWTWithConfig(JwtConfig))
+
+	JwtConfig2 := TPCMiddleware.MyJWTUserConfig
+	JwtConfig2.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(
 		&TPCMiddleware.ImplementJWTUser{AddInitiatedThread: true,
 			AddReceivedThread: true,
 			Subject:           config.JwtLoginSubject,
 			GiveMeSQB:         true})
 
-	group.GET("/threads", controllers.GetThreads, middleware.JWTWithConfig(JwtConfig))
+	group.HandleFunc("/threads", controllers.GetThreads).
+		Subrouter().
+		Use(TPCMiddleware.JWTWithConfig(JwtConfig2))
 }

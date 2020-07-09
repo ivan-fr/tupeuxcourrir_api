@@ -1,10 +1,10 @@
 package routes
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/gorilla/mux"
 	"tupeuxcourrir_api/controllers"
 )
 
-func SystemRoutes(group *echo.Group) {
-	group.GET("/uri", controllers.GetUri)
+func SystemRoutes(mainRouter, group *mux.Router) {
+	group.HandleFunc("/uri", controllers.GetUriBox(mainRouter))
 }
