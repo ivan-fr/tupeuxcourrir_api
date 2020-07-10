@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 	"os"
 	"tupeuxcourrir_api/db"
@@ -17,5 +18,5 @@ func main() {
 
 	loggedRouter := handlers.LoggingHandler(os.Stdout, r)
 	recoveryHandler := handlers.RecoveryHandler()(loggedRouter)
-	_ = http.ListenAndServe(":1123", recoveryHandler)
+	log.Fatal(http.ListenAndServe(":1123", recoveryHandler))
 }

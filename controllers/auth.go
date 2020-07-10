@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
-	"github.com/gorilla/schema"
-	"log"
 	"net/http"
 	"time"
 	"tupeuxcourrir_api/config"
@@ -31,16 +29,14 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	decoder := schema.NewDecoder()
-	err = decoder.Decode(&form, r.PostForm)
+	err = utils.SchemaDecoder.Decode(&form, r.PostForm)
 
 	if err != nil {
 		panic(err)
 	}
 
-	w.WriteHeader(http.StatusBadRequest)
-
 	if err = validator.New().Struct(&form); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
@@ -48,6 +44,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	var hash []byte
 	hash, err = bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
@@ -58,8 +55,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	iQB := orm.GetInsertQueryBuilder(models.NewUser(), &user)
 
 	if _, err = iQB.ApplyInsert(); err != nil {
-		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
-		return
+		panic(err)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -75,15 +71,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	decoder := schema.NewDecoder()
-	err = decoder.Decode(&loginForm, r.PostForm)
+	err = utils.SchemaDecoder.Decode(&loginForm, r.PostForm)
 
 	if err != nil {
 		panic(err)
 	}
 
-	w.WriteHeader(http.StatusBadRequest)
 	if err = validator.New().Struct(&loginForm); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
@@ -94,6 +89,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	err = sQB.ApplyQueryRow()
 
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
@@ -102,6 +98,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword),
 		[]byte(loginForm.EncryptedPassword)); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
@@ -134,15 +131,14 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	decoder := schema.NewDecoder()
-	err = decoder.Decode(&forgotPasswordForm, r.PostForm)
+	err = utils.SchemaDecoder.Decode(&forgotPasswordForm, r.PostForm)
 
 	if err != nil {
 		panic(err)
 	}
 
-	w.WriteHeader(http.StatusBadRequest)
 	if err = validator.New().Struct(&forgotPasswordForm); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
@@ -161,7 +157,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var execute = true
 
 	switch {
-	case user.CheckedEmail == false:
+	case user.CheckedEmail == true:
 		execute = false
 	case user.SentChangePasswordMailAt.Valid:
 		val, _ := user.SentChangePasswordMailAt.Value()
@@ -190,7 +186,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 				"host": r.Host, "token": token})
 
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		err = mailer.SendEmail()
@@ -208,17 +204,19 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(nil)
+		return
 	}
 
+	w.WriteHeader(http.StatusBadRequest)
 	err = errors.New("we had already sent this mail type in last 15 minutes or your email wasn't validated")
 	_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 }
 
 func EditPasswordFromLink(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusBadRequest)
 	concernUser := r.Context().Value("user")
 
 	if concernUser == nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode("wrong token")
 		return
 	}
@@ -233,19 +231,20 @@ func EditPasswordFromLink(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	decoder := schema.NewDecoder()
-	err = decoder.Decode(&form, r.PostForm)
+	err = utils.SchemaDecoder.Decode(&form, r.PostForm)
 
 	if err != nil {
 		panic(err)
 	}
 
 	if err = validator.New().Struct(&form); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
 
 	if form.EncryptedPassword != form.ConfirmPassword {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("the password aren't same")))
 		return
 	}
@@ -253,6 +252,7 @@ func EditPasswordFromLink(w http.ResponseWriter, r *http.Request) {
 	var hash []byte
 	hash, err = bcrypt.GenerateFromPassword([]byte(form.EncryptedPassword), bcrypt.MinCost)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
