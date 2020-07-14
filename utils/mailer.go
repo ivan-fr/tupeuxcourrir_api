@@ -5,9 +5,10 @@ import (
 	"errors"
 	"html/template"
 	"net/smtp"
+	"tupeuxcourrir_api/config"
 )
 
-var auth = smtp.PlainAuth("", "tupeuxcourrir@gmail.com", "ujmjgievlrwcaqxo", "smtp.gmail.com")
+var auth = smtp.PlainAuth("", config.EmailUsername, config.EmailPassword, config.EmailHost)
 
 type mail struct {
 	from    string
