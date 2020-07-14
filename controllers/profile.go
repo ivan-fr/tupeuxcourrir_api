@@ -57,9 +57,8 @@ func PutAddress(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	w.WriteHeader(http.StatusBadRequest)
-
 	if err = validator.New().Struct(&form); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 		return
 	}
@@ -118,14 +117,15 @@ func PutPhoto(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		_ = dst.Close()
-	}()
 
 	// Copy
 	if _, err = io.Copy(dst, photoFile); err != nil {
 		panic(err)
 	}
+
+	defer func() {
+		_ = dst.Close()
+	}()
 
 	uQB := orm.GetUpdateQueryBuilder(user)
 	_, errSub := uQB.ApplyUpdate()
@@ -190,9 +190,10 @@ func SendForValidateMail(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(nil)
+		return
 	}
 
 	err := errors.New("we had already sent this mail type in last 15 minutes or your email is already checked")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusUnauthorized)
 	_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 }

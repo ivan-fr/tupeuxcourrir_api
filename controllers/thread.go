@@ -34,6 +34,7 @@ func WsThread(w http.ResponseWriter, r *http.Request) {
 	if targetThread.InitiatorThreadIdUser != user.IdUser && targetThread.ReceiverThreadIdUser != user.IdUser {
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(nil)
+		return
 	}
 
 	var connexion *websocket.Conn

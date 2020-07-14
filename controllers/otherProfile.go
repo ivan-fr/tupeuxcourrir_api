@@ -42,9 +42,8 @@ func MakeThreadWithOtherProfile(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	w.WriteHeader(http.StatusUnauthorized)
-
 	if idTarget == user.IdUser {
+		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(
 			utils.JsonErrorPattern(
 				errors.New("the receiver of your thread must have different ID from you")))

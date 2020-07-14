@@ -16,9 +16,9 @@ import (
 func CheckMail(w http.ResponseWriter, r *http.Request) {
 	JWTContext := r.Context().Value("JWTContext").(*jwt.Token)
 	claims := JWTContext.Claims.(*TPCMiddleware.JwtUserCustomClaims)
-	w.WriteHeader(http.StatusUnauthorized)
 
 	if claims.Subject != config.JwtCheckEmailSubject {
+		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("wrong jwt subject")))
 		return
 	}
@@ -35,6 +35,7 @@ func CheckMail(w http.ResponseWriter, r *http.Request) {
 	concernUser := sQB.EffectiveModel.(*models.User)
 
 	if concernUser.CheckedEmail {
+		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(nil)
 		return
 	}

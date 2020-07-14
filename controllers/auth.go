@@ -157,7 +157,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var execute = true
 
 	switch {
-	case user.CheckedEmail == true:
+	case user.CheckedEmail == false:
 		execute = false
 	case user.SentChangePasswordMailAt.Valid:
 		val, _ := user.SentChangePasswordMailAt.Value()
