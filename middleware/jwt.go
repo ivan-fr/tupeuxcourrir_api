@@ -143,6 +143,10 @@ func JWTWithConfig(config JWTConfig) mux.MiddlewareFunc {
 	// Initialize
 	parts := strings.Split(config.TokenLookup, ":")
 	extractor := jwtFromHeader(parts[1], config.AuthScheme)
+	switch parts[0] {
+	case "param":
+		extractor = jwtFromParam(parts[1])
+	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -151,6 +155,7 @@ func JWTWithConfig(config JWTConfig) mux.MiddlewareFunc {
 			if auth == "" {
 				w.WriteHeader(http.StatusForbidden)
 				_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("forbidden")))
+				return
 			}
 			token := new(jwt.Token)
 			// Issue #647, #656
@@ -171,6 +176,7 @@ func JWTWithConfig(config JWTConfig) mux.MiddlewareFunc {
 			} else {
 				w.WriteHeader(http.StatusUnauthorized)
 				_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(errors.New("invalid or expired jwt")))
+				return
 			}
 		})
 	}
@@ -184,6 +190,20 @@ func jwtFromHeader(header string, authScheme string) jwtExtractor {
 		if len(auth) > l+1 && auth[:l] == authScheme {
 			return auth[l+1:]
 		}
+		return ""
+	}
+}
+
+// jwtFromParam returns a `jwtExtractor` that extracts token from the url param string.
+func jwtFromParam(param string) jwtExtractor {
+	return func(r *http.Request) string {
+		vars := mux.Vars(r)
+		token, ok := vars[param]
+
+		if ok {
+			return token
+		}
+
 		return ""
 	}
 }

@@ -9,8 +9,9 @@ import (
 
 func CheckerRoutes(group *mux.Router) {
 	JwtConfig := TPCMiddleware.MyJWTUserConfig
+	JwtConfig.TokenLookup = "param:token"
 	JwtConfig.SuccessHandler = TPCMiddleware.ImplementUserJwtSuccessHandler(&TPCMiddleware.ImplementJWTUser{Subject: config.JwtCheckEmailSubject})
-	group.HandleFunc("/checkMail", controllers.CheckMail).
+	group.HandleFunc("/checkMail/{token}", controllers.CheckMail).
 		Methods("POST").
 		Subrouter().
 		Use(TPCMiddleware.JWTWithConfig(JwtConfig))

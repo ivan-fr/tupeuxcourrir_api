@@ -122,7 +122,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(orm.H{"token": claims.GetToken()})
 }
 
-func ForgotPassword(w http.ResponseWriter, r *http.Request) {
+func SendForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPasswordForm forms.ForgotPasswordForm
 
 	err := r.ParseForm()
@@ -212,7 +212,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(utils.JsonErrorPattern(err))
 }
 
-func EditPasswordFromLink(w http.ResponseWriter, r *http.Request) {
+func EditPassword(w http.ResponseWriter, r *http.Request) {
 	concernUser := r.Context().Value("user")
 
 	if concernUser == nil {
